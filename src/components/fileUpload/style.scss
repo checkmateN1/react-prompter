@@ -1,0 +1,277 @@
+@import '../../sass/variables';
+
+.app-wrapper {
+  display: flex;
+  justify-content: space-between;
+  user-select: none;
+}
+
+.upload-wrapper {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 30px;
+  width: 53%;
+  max-width: 565px;
+
+  input[type="file"] {
+    display: none;
+  }
+
+  .next-button {
+    width: 70px;
+  }
+
+  .custom-file-upload {
+    display: inline-block;
+    margin: 0 20px;
+    flex-grow: 1;
+    border: 1px solid #ccc;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 12px;
+    color: lightgoldenrodyellow;
+  }
+
+  img {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    top: 30px;
+    left: 50px;
+    opacity: 0;
+  }
+
+  input:hover + img {
+    display: block;
+    transition: 2s;
+    opacity: 1;
+  }
+}
+
+.main-container.spins.party-poker {
+  position: absolute;
+  background-color: lightgrey;
+  /*background-image: url("Partypoker_Spin&Go.png");*/
+  border: 1px solid red;
+  width: 712px;
+  height: 518px;
+  font-family: Arial, sans-serif;
+  font-size: 22px;
+  zoom: 0.65;
+  top: 616px;
+  left: 15px;
+}
+
+.upload-wrapper .custom-file-upload {
+  min-width: 76px;
+}
+
+.main-container.spins.party-poker .player,
+.main-container.spins.party-poker .prompt {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  padding: 3px;
+}
+
+.main-container.spins.party-poker .prompt {
+  border: none;
+  left: 250px;
+  top: 200px;
+  font-size: 28px;
+  width: 200px;
+}
+.main-container.spins.party-poker .prompt .sizings table {
+  font-size: 14px;
+}
+.main-container.spins.party-poker .prompt .sizings table tr {
+  line-height: 13px;
+}
+
+td.ev {
+  padding-left: 10px;
+}
+
+.diagram {
+  display: flex;
+  margin: 15px 0;
+}
+
+.diagram > div {
+  height: 20px;
+}
+
+.diagram .fold {
+  background-color: black;
+}
+.diagram .check-call {
+  background-color: yellow;
+}
+.diagram .bet-raise {
+  background-color: #d90000;
+}
+
+.fold {
+  color: black;
+}
+.check-call {
+  color: #92923d;
+}
+.bet-raise {
+  color: #d90000;
+}
+.ev {
+  color: green;
+}
+
+.main-container.spins.party-poker .board {
+  display: flex;
+  position: absolute;
+  left: 254px;
+  top: 126px;
+  width: 200px;
+  justify-content: space-around;
+  font-size: 22px;
+}
+.main-container.spins.party-poker .board .pot {
+  position: absolute;
+  top: -42px;
+  left: 35px;
+  font-size: 23px;
+  color: #000;
+  width: 165px;
+}
+.main-container.spins.party-poker .hero-hand {
+  display: flex;
+  position: absolute;
+  left: 312px;
+  top: 389px;
+  width: 76px;
+  justify-content: space-around;
+  font-size: 22px;
+}
+.main-container.spins.party-poker .cards {
+  border-radius: 4px;
+  width: 35px;
+  text-align: center;
+  color: white;
+}
+.main-container.spins.party-poker .suit {
+  font-size: 30px;
+  margin-top: -9px;
+}
+
+.main-container.spins.party-poker .hearts {
+  background-color: #d90000;
+}
+.main-container.spins.party-poker .diamonds {
+  background-color: rgba(0, 0, 255, 0.7);
+}
+.main-container.spins.party-poker .clubs {
+  background-color: green;
+}
+.main-container.spins.party-poker .spades {
+  background-color: #383838;
+}
+
+.amount {
+  position: absolute;
+  font-size: 21px;
+}
+.dealer {
+  position: absolute;
+  font-size: 15px;
+  border: 1px solid grey;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  background-color: white;
+}
+
+.dealer span {
+  position: relative;
+  left: 1px;
+  top: 1px;
+  color: #000;
+}
+
+.main-container.spins.party-poker .player .nickname {
+  position: absolute;
+  top: -20px;
+}
+
+.main-container.spins.party-poker .player.player0 {
+  left: 50px;
+  top: 50px;
+}
+.main-container.spins.party-poker .player.player1 {
+  right: 90px;
+  top: 50px;
+}
+.main-container.spins.party-poker .player.player2 {
+  left: 300px;
+  bottom: 34px;
+}
+
+.balance {
+  color: #000;
+  font-size: 20px;
+}
+
+.main-container.spins.party-poker .player.player0 .amount {
+  left: 117px;
+  top: 11px;
+  white-space: nowrap;
+}
+.main-container.spins.party-poker .player.player0 .dealer {
+  left: 38px;
+  top: 40px;
+}
+.main-container.spins.party-poker .player.player1 .amount {
+  left: -86px;
+  top: 11px;
+  white-space: nowrap;
+}
+.main-container.spins.party-poker .player.player1 .dealer {
+  left: 0px;
+  top: 40px;
+}
+.main-container.spins.party-poker .player.player2 .amount {
+  left: 61px;
+  top: -130px;
+  white-space: nowrap;
+}
+.main-container.spins.party-poker .player.player2 .dealer {
+  left: 191px;
+  top: -20px;
+}
+
+.red {
+  color: red;
+}
+
+.green {
+  color: #50b22f;
+}
+
+
+
+@media (max-width: $mobile-width) {
+  .upload-wrapper {
+    width: 100%;
+    flex-wrap: nowrap;
+
+    .custom-file-upload {
+      margin-left: 0;
+      box-sizing: border-box;
+    }
+    button {
+      width: 20%;
+      box-sizing: border-box;
+    }
+  }
+}

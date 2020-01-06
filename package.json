@@ -1,0 +1,40 @@
+{
+  "name": "react-intervace-frame-debugger",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "eslint": "^6.6.0",
+    "framer": "^1.1.5",
+    "fs": "0.0.1-security",
+    "http": "0.0.0",
+    "moment": "^2.24.0",
+    "node-sass": "^4.13.0",
+    "react": "^16.11.0",
+    "react-dom": "^16.11.0",
+    "react-scripts": "^3.3.0",
+    "sass": "^1.23.3",
+    "socket.io": "^2.3.0",
+    "socket.io-client": "^2.3.0"
+  },
+  "scripts": {
+    "start": "set PORT=3006 && react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": "react-app"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
