@@ -1,20 +1,18 @@
+// Core
 import React from 'react';
-import './App.css';
 
 // Components
-import FileUpload from './components/fileUpload';
+import TablesWrapper from './components/TablesWrapper';
+
+// Instruments
+import './App.css';
 
 function App() {
   return (
     <div className="App">
       <header className="App-header">
         <div className={'app-wrapper'}>
-          <div>
-            <FileUpload
-                isReady={true}
-            />
-          </div>
-          <div></div>
+          <TablesWrapper />
         </div>
       </header>
     </div>

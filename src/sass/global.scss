@@ -1,33 +1,10 @@
 @import './variables';
 
-@font-face {
-  font-family: "SourceSansPro-Regular";
-  src: url("fonts/SourceSansPro-Regular.otf.woff2") format("woff2"),
-  url('fonts/SourceSansPro-Regular.ttf') format("truetype");
-  font-weight: 400;
-  font-style: normal;
-}
-@font-face {
-  font-family: "SourceSansPro-Bold";
-  src: url("fonts/SourceSansPro-Bold.otf.woff2") format("woff2"),
-  url('fonts/SourceSansPro-Bold.ttf') format("truetype");
-  font-weight: 700;
-  font-style: normal;
-}
-@font-face {
-  font-family: "Overpass-semibold";
-  src: url("./fonts/overpass-semibold.woff2") format("woff2"),
-  url('fonts/overpass-semibold.ttf') format("truetype");
-  font-weight: 600;
-  font-style: normal;
-}
-
 * {
   box-sizing: border-box;
 }
 
 body {
-  font-family: "SourceSansPro-Regular";
   margin: 0;
   padding: 0;
   cursor: default;
@@ -65,7 +42,6 @@ body {
     &:hover { background: $primary-hover; }
 
     span {
-      font-family: SourceSansPro-Bold;
       font-weight: 700;
       font-size: 20px;
       display: inline-block;
