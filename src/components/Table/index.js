@@ -2,7 +2,6 @@
 import React, { Component } from 'react';
 
 // Instruments
-import './style.scss';
 import { enumPoker } from '../../enum';
 
 class Table extends Component {
@@ -10,7 +9,7 @@ class Table extends Component {
   render() {
     const {
       prompt = {},
-      id,
+      position,
     } = this.props;
 
     const {
@@ -21,9 +20,9 @@ class Table extends Component {
     } = prompt;
 
     return (
-        <div className="main-container spins party-poker">
+        <div className={`main-container spins party-poker ${position}`}>
           {players[0] && <div className="player player0">
-            <div className="nickname green">{players[0].nickname} <span
+            <div className="nickname">{players[0].nickname} <span
                 className="balance">{players[0].balance} BB</span></div>
             {players[0].isDealer ? <div className="dealer"><span>D</span></div> : null}
             {players[0].bet ? <div className={'amount ' + players[0].agroClass}>{players[0].bet} BB</div> : null}

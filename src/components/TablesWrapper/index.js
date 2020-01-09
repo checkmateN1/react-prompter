@@ -8,21 +8,11 @@ import Table from '../Table';
 // Instruments
 import './style.scss';
 
-const ioClient = io("http://localhost:27990");
-const token = 'uidfksicnm730pdemg662oermfyf75jdf9djf';  // simulator/debug
+// const url = "http://localhost:27990";
+// const url = "http://212.22.223.151:27990"; // mephisto
+// const url = "http://212.22.223.151:27991"; // lucifer
 
-// authorization
-ioClient.emit('authorization', token);
-
-ioClient.on('authorizationSuccess', () => {
-  console.log('authorization success: client');
-
-  ioClient.emit('startPromptSending');
-});
-
-ioClient.on('disconnect', () => {
-  console.log('server gone');
-});
+// const token = 'uidfksicnm730pdemg662oermfyf75jdf9djf';  // simulator/debug
 
 class TablesWrapper extends Component {
   state = {
@@ -30,13 +20,53 @@ class TablesWrapper extends Component {
     1: {},
     2: {},
     3: {},
+    token: '',
+    server1: '',
+    server2: '',
+    isConnected: false,
   };
 
   componentDidMount() {
-    this.startListener();
+    const token = localStorage.getItem('token');
+    const server1 = localStorage.getItem('server1');
+    const server2 = localStorage.getItem('server2');
+    this.setState({
+      token,
+      server1,
+      server2
+    });
+
+    setTimeout(() => {
+      this.startListener();
+    }, 100)
   }
 
   startListener = () => {
+    const {
+      token,
+      server1,
+      server2,
+    } = this.state;
+
+    const ioClient = io(server1);
+
+    // authorization
+    ioClient.emit('authorization', token);
+
+    ioClient.on('authorizationSuccess', () => {
+      console.log('authorization success: client');
+
+      this.setState({
+        isConnected: true
+      });
+
+      localStorage.setItem('token', token);
+      localStorage.setItem('server1', server1);
+      localStorage.setItem('server2', server2);
+
+      ioClient.emit('startPromptSending');
+    });
+
     ioClient.on("prompt", data => {
       console.log(data);
 
@@ -44,6 +74,44 @@ class TablesWrapper extends Component {
         [data.id]: data.prompt,
       });
     });
+
+    ioClient.on('disconnect', () => {
+      console.log('server gone');
+
+      this.setState({
+        isConnected: false
+      });
+    });
+  };
+
+  tokenHandler = (e) => {
+    this.setState({
+      token: e.target.value
+    })
+  };
+
+  srv1Handler = (e) => {
+    this.setState({
+      server1: e.target.value
+    })
+  };
+
+  srv2Handler = (e) => {
+    this.setState({
+      server2: e.target.value
+    })
+  };
+
+  connectHandler = () => {
+    const {
+      token,
+      server1,
+      server2,
+    } = this.state;
+
+    if (token && server1) {
+      this.startListener();
+    }
   };
 
   render() {
@@ -52,12 +120,28 @@ class TablesWrapper extends Component {
     const table2 = !!Object.keys(this.state["2"]).length;
     const table3 = !!Object.keys(this.state["3"]).length;
 
+    const token = localStorage.getItem('token');
+    const server1 = localStorage.getItem('server1');
+    const server2 = localStorage.getItem('server2');
+
     return (
         <>
-          {table0 && <Table prompt={this.state["0"]} id={0}/>}
-          {table1 && <Table prompt={this.state["1"]} id={1}/>}
-          {table2 && <Table prompt={this.state["2"]} id={2}/>}
-          {table3 && <Table prompt={this.state["3"]} id={3}/>}
+          {true && <Table prompt={this.state["0"]} position='left top'/>}
+          {true && <Table prompt={this.state["1"]} position='right top'/>}
+          {true && <Table prompt={this.state["2"]} position='left bottom'/>}
+          {true && <Table prompt={this.state["3"]} position='right bottom'/>}
+
+          <div className="connection-settings">
+            <input placeholder="token" type="text" defaultValue={token || ''} onChange={this.tokenHandler}/>
+            <input placeholder="main server" type="text" defaultValue={server1 || ''} onChange={this.srv1Handler}/>
+            <input placeholder="reserve server" type="text" defaultValue={server2 || ''} onChange={this.srv2Handler}/>
+
+            <div className="status-wrapper">
+              <button onClick={this.connectHandler}>connect</button>
+              <div>{this.state.isConnected ? 'online' : 'offline'}</div>
+              <div className={this.state.isConnected ? 'on' : 'off'}></div>
+            </div>
+          </div>
         </>
     );
   }
