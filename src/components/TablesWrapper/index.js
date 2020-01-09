@@ -30,15 +30,15 @@ class TablesWrapper extends Component {
     const token = localStorage.getItem('token');
     const server1 = localStorage.getItem('server1');
     const server2 = localStorage.getItem('server2');
-    this.setState({
-      token,
-      server1,
-      server2
-    });
 
-    setTimeout(() => {
-      this.startListener();
-    }, 100)
+    console.log('server2');
+    console.log(server2);
+
+    this.setState({
+      token: token || '',
+      server1: server1 || '',
+      server2: server2 || '',
+    });
   }
 
   startListener = () => {
@@ -62,7 +62,7 @@ class TablesWrapper extends Component {
 
       localStorage.setItem('token', token);
       localStorage.setItem('server1', server1);
-      localStorage.setItem('server2', server2);
+      localStorage.setItem('server2', server2 || '');
 
       ioClient.emit('startPromptSending');
     });
@@ -115,14 +115,16 @@ class TablesWrapper extends Component {
   };
 
   render() {
+    const {
+      token,
+      server1,
+      server2
+    } = this.state;
+
     const table0 = !!Object.keys(this.state["0"]).length;
     const table1 = !!Object.keys(this.state["1"]).length;
     const table2 = !!Object.keys(this.state["2"]).length;
     const table3 = !!Object.keys(this.state["3"]).length;
-
-    const token = localStorage.getItem('token');
-    const server1 = localStorage.getItem('server1');
-    const server2 = localStorage.getItem('server2');
 
     return (
         <>

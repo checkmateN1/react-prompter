@@ -28,7 +28,7 @@ class Table extends Component {
             {players[0].bet ? <div className={'amount ' + players[0].agroClass}>{players[0].bet} BB</div> : null}
           </div>}
           {players[1] && <div className="player player1">
-            <div className="nickname red">{players[1].nickname} <span
+            <div className="nickname">{players[1].nickname} <span
                 className="balance">{players[1].balance} BB</span></div>
             {players[1].isDealer ? <div className="dealer"><span>D</span></div> : null}
             {players[1].bet ? <div className={'amount ' + players[1].agroClass}>{players[1].bet} BB</div> : null}
