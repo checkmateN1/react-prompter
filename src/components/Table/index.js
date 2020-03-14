@@ -4,11 +4,32 @@ import React, { Component } from 'react';
 // Instruments
 import { enumPoker } from '../../enum';
 
+const maxDiff = 55;
+
 class Table extends Component {
+
+  getColor = (isAgro, isFold) => {
+    if (isAgro) {
+      return `rgb(${255}, 0, 0)`;
+    } else if (isFold) {
+      return `rgb(${0}, ${0}, ${0})`;
+    }
+    return `rgb(${255}, ${255}, 0)`;
+  };
+
+  getMoveType = (isAgro, isFold, wasBet) => {
+    if (isAgro) {
+      return wasBet ? 'Raise' : 'Bet';
+    } else if (isFold) {
+      return 'Fold';
+    }
+    return wasBet ? 'Call' : 'Check';
+  };
 
   render() {
     const {
       prompt = {},
+      handPrompt = {},
       position,
     } = this.props;
 
@@ -17,7 +38,42 @@ class Table extends Component {
       pot = '',
       heroCards = '',
       board = [],
+      move_id,
+      handNumber,
     } = prompt;
+
+    const {
+      strategy = {},
+      hand_move_id,
+      hand_handNumber,
+      wasBet,
+      maxAmount,
+    } = handPrompt;
+
+    const isPromptRelevant = move_id === hand_move_id && handNumber === hand_handNumber;
+
+    let movesList = [];
+    if (isPromptRelevant) {
+      const maxRegret = Object.keys(strategy).reduce((max, move) => {
+        return strategy[move].regret > max ? strategy[move].regret : max;
+      }, 0);
+
+      movesList = Object.keys(strategy).sort((a, b) => +b - +a).map(key => {
+        const move = strategy[key];
+        const regretDiff = Math.min(Math.abs(maxRegret - move.regret), maxDiff);
+        const isAgro = +key > 0;
+        const isFold = key === '-1';
+        const moveType = this.getMoveType(isAgro, isFold, wasBet);
+        const probab = Math.round(move.strategy * 100);
+        const regret = (move.regret/100).toFixed(2) + 'BB';
+        const amount = isAgro ? (Math.round((maxAmount ? maxAmount + +key : +key) / 100) + 'BB') : '';
+        const componentStyle = {
+          color: this.getColor(isAgro, isFold),
+          fontSize: (probab > 5 || regretDiff < 3) ? 38 : (25 - regretDiff * 0.182),
+        };
+        return <li style={componentStyle}>{moveType + ` ` + amount + ` `}<span className="regret">{regret}</span></li>
+      });
+    }
 
     return (
         <div className={`main-container spins party-poker ${position}`}>
@@ -72,8 +128,10 @@ class Table extends Component {
               <div className="suit">{heroCards ? enumPoker.cardsSuitsCode[enumPoker.cardsSuits.indexOf(heroCards.hole2Suit)] : ''}</div>
             </div>
           </div>
-          <div className="prompt">
-          </div>
+          {isPromptRelevant && <div className="prompt">
+              <ul className="prompt-moves">{ movesList }</ul>
+            </div>
+          }
         </div>
     );
   }

@@ -81,11 +81,26 @@
 
 .main-container.spins.party-poker .prompt {
   border: none;
-  left: 250px;
+  left: 75px;
   top: 200px;
   font-size: 28px;
-  width: 200px;
+  width: 500px;
 }
+
+.main-container.spins.party-poker .prompt .prompt-moves {
+  list-style: none;
+  position: relative;
+  top: -110px;
+}
+
+.prompt-moves li .probab {
+  color: white;
+}
+
+.prompt-moves li .regret {
+  color: #2912cc;
+}
+
 .main-container.spins.party-poker .prompt .sizings table {
   font-size: 14px;
 }
@@ -133,7 +148,7 @@ td.ev {
   display: flex;
   position: absolute;
   left: 254px;
-  top: 126px;
+  top: 50px;
   width: 200px;
   justify-content: space-around;
   font-size: 22px;
@@ -193,6 +208,10 @@ td.ev {
   background-color: white;
 }
 
+.test {
+  color: rgb(60, 0, 0);
+}
+
 .dealer span {
   position: relative;
   left: 1px;
@@ -243,8 +262,8 @@ td.ev {
   top: 40px;
 }
 .main-container.spins.party-poker .player.player2 .amount {
-  left: 61px;
-  top: -130px;
+  left: 120px;
+  top: -87px;
   white-space: nowrap;
 }
 .main-container.spins.party-poker .player.player2 .dealer {

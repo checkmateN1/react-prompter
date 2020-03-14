@@ -16,10 +16,14 @@ import './style.scss';
 
 class TablesWrapper extends Component {
   state = {
-    0: {},
-    1: {},
-    2: {},
-    3: {},
+    table0: {},
+    table1: {},
+    table2: {},
+    table3: {},
+    hand0: {},
+    hand1: {},
+    hand2: {},
+    hand3: {},
     token: '',
     server1: '',
     server2: '',
@@ -68,10 +72,15 @@ class TablesWrapper extends Component {
     });
 
     ioClient.on("prompt", data => {
-      console.log(data);
-
       this.setState({
-        [data.id]: data.prompt,
+        ['table' + data.id]: data.prompt,
+      });
+    });
+
+    ioClient.on("hand_prompt", data => {
+      console.log(data);
+      this.setState({
+        ['hand' + data.id]: data.hand_prompt,
       });
     });
 
@@ -106,7 +115,6 @@ class TablesWrapper extends Component {
     const {
       token,
       server1,
-      server2,
     } = this.state;
 
     if (token && server1) {
@@ -116,22 +124,30 @@ class TablesWrapper extends Component {
 
   render() {
     const {
+      table0,
+      table1,
+      table2,
+      table3,
+      hand0,
+      hand1,
+      hand2,
+      hand3,
       token,
       server1,
       server2
     } = this.state;
 
-    const table0 = !!Object.keys(this.state["0"]).length;
-    const table1 = !!Object.keys(this.state["1"]).length;
-    const table2 = !!Object.keys(this.state["2"]).length;
-    const table3 = !!Object.keys(this.state["3"]).length;
+    // const table0 = !!Object.keys(this.state["0"]).length;
+    // const table1 = !!Object.keys(this.state["1"]).length;
+    // const table2 = !!Object.keys(this.state["2"]).length;
+    // const table3 = !!Object.keys(this.state["3"]).length;
 
     return (
         <>
-          {true && <Table prompt={this.state["0"]} position='left top'/>}
-          {true && <Table prompt={this.state["1"]} position='right top'/>}
-          {true && <Table prompt={this.state["2"]} position='left bottom'/>}
-          {true && <Table prompt={this.state["3"]} position='right bottom'/>}
+          <Table prompt={table0} handPrompt={hand0} position='left top'/>
+          <Table prompt={table1} handPrompt={hand1} position='right top'/>
+          <Table prompt={table2} handPrompt={hand2} position='left bottom'/>
+          <Table prompt={table3} handPrompt={hand3} position='right bottom'/>
 
           <div className="connection-settings">
             <input placeholder="token" type="text" defaultValue={token || ''} onChange={this.tokenHandler}/>
