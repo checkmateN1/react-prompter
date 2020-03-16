@@ -84,6 +84,34 @@ class TablesWrapper extends Component {
       });
     });
 
+    ioClient.on("debugInfo", data => {
+      console.log(data);
+      const {
+        id,
+        hand,
+        aggregatorLock,
+        move,
+        aggregatorFree,
+        sessionsQueue,
+        tasksSimulationsQueue,
+      } = data;
+      this.setState(prevState => {
+        return {
+          ['table' + id]: {
+            ...prevState['table' + id],
+            debug_hand: hand,
+            debug_aggregatorLock: aggregatorLock,
+            debug_move: move,
+          },
+          debug_info: {
+            aggregatorFree,
+            sessionsQueue,
+            tasksSimulationsQueue,
+          }
+        }
+      });
+    });
+
     ioClient.on('disconnect', () => {
       console.log('server gone');
 
@@ -134,8 +162,16 @@ class TablesWrapper extends Component {
       hand3,
       token,
       server1,
-      server2
+      server2,
+      debug_info = {},
+      debug_mode = true,
     } = this.state;
+
+    const {
+      aggregatorFree = true,
+      sessionsQueue = '',
+      tasksSimulationsQueue = '',
+    } = debug_info;
 
     // const table0 = !!Object.keys(this.state["0"]).length;
     // const table1 = !!Object.keys(this.state["1"]).length;
@@ -144,10 +180,18 @@ class TablesWrapper extends Component {
 
     return (
         <>
-          <Table prompt={table0} handPrompt={hand0} position='left top'/>
-          <Table prompt={table1} handPrompt={hand1} position='right top'/>
-          <Table prompt={table2} handPrompt={hand2} position='left bottom'/>
-          <Table prompt={table3} handPrompt={hand3} position='right bottom'/>
+          <Table prompt={table0} handPrompt={hand0} debug_mode={debug_mode} position='left top'/>
+          <Table prompt={table1} handPrompt={hand1} debug_mode={debug_mode} position='right top'/>
+          <Table prompt={table2} handPrompt={hand2} debug_mode={debug_mode} position='left bottom'/>
+          <Table prompt={table3} handPrompt={hand3} debug_mode={debug_mode} position='right bottom'/>
+
+          {debug_mode &&
+            <div className="debug-info">
+              <div className={`debug-info-str ` + (aggregatorFree ? '' : 'true')}>{'aggregatorFree:' + aggregatorFree}</div>
+              <div className={`debug-info-str ` + (sessionsQueue ? 'true' : '')}>{'sessionsQueue:' + sessionsQueue}</div>
+              <div className={`debug-info-str ` + (tasksSimulationsQueue ? 'true' : '')}>{'tasksSimulationsQueue:' + tasksSimulationsQueue}</div>
+            </div>
+          }
 
           <div className="connection-settings">
             <input placeholder="token" type="text" defaultValue={token || ''} onChange={this.tokenHandler}/>
@@ -166,4 +210,3 @@ class TablesWrapper extends Component {
 }
 
 export default TablesWrapper;
-

@@ -90,7 +90,12 @@
 .main-container.spins.party-poker .prompt .prompt-moves {
   list-style: none;
   position: relative;
-  top: -110px;
+  top: -90px;
+  width: 550px;
+}
+
+.prompt .prompt-moves td {
+  width: 275px;
 }
 
 .prompt-moves li .probab {
@@ -98,6 +103,17 @@
 }
 
 .prompt-moves li .regret {
+  color: #2912cc;
+}
+
+.prompt-moves tr td:first-child {
+  text-align: right;
+  padding-right: 5px;
+}
+
+.prompt-moves tr td:last-child {
+  text-align: left;
+  padding-left: 5px;
   color: #2912cc;
 }
 
@@ -267,8 +283,8 @@ td.ev {
   white-space: nowrap;
 }
 .main-container.spins.party-poker .player.player2 .dealer {
-  left: 191px;
-  top: -20px;
+  left: 129px;
+  top: -45px;
 }
 
 .red {
@@ -277,6 +293,45 @@ td.ev {
 
 .green {
   color: #50b22f;
+}
+
+.debug-info {
+  position: absolute;
+  bottom: 10px;
+  left: 39%;
+  font-size: 20px;
+}
+
+.debugTable {
+  position: absolute;
+  text-align: left;
+  bottom: 0;
+  color: black;
+}
+
+.debug-info-str {
+  color: green;
+}
+
+.debug-info-str.true {
+  color: red;
+}
+
+.hero-buttons {
+  display: flex;
+  justify-content: space-between;
+  width: 230px;
+  height: 40px;
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+}
+
+.hero-buttons div {
+  width: 68px;
+  height: 100%;
+  background-color: #7d7d7d;
+  border-radius: 5px;
 }
 
 

@@ -5,6 +5,7 @@ import React, { Component } from 'react';
 import { enumPoker } from '../../enum';
 
 const maxDiff = 55;
+const regretDiffMax = 3;
 
 class Table extends Component {
 
@@ -17,7 +18,8 @@ class Table extends Component {
     return `rgb(${255}, ${255}, 0)`;
   };
 
-  getMoveType = (isAgro, isFold, wasBet) => {
+  getMoveType = (isAgro, isFold, wasBet, isMaxAgro) => {
+    if (isMaxAgro) { return 'All-in'; }
     if (isAgro) {
       return wasBet ? 'Raise' : 'Bet';
     } else if (isFold) {
@@ -31,6 +33,7 @@ class Table extends Component {
       prompt = {},
       handPrompt = {},
       position,
+      debug_mode,
     } = this.props;
 
     const {
@@ -38,8 +41,12 @@ class Table extends Component {
       pot = '',
       heroCards = '',
       board = [],
+      isHeroTurn = false,
       move_id,
       handNumber,
+      debug_hand = '',
+      debug_aggregatorLock = '',
+      debug_move = '',
     } = prompt;
 
     const {
@@ -52,26 +59,35 @@ class Table extends Component {
 
     const isPromptRelevant = move_id === hand_move_id && handNumber === hand_handNumber;
 
+    const maxRegret = Object.keys(strategy).reduce((max, move) => {
+      return strategy[move].regret > max ? strategy[move].regret : max;
+    }, 0);
+
     let movesList = [];
     if (isPromptRelevant) {
-      const maxRegret = Object.keys(strategy).reduce((max, move) => {
-        return strategy[move].regret > max ? strategy[move].regret : max;
-      }, 0);
-
-      movesList = Object.keys(strategy).sort((a, b) => +b - +a).map(key => {
+      const listKeys = Object.keys(strategy).sort((a, b) => +b - +a);
+      const maxSizeMoves = listKeys.reduce((sum, key) => Math.abs(maxRegret - strategy[key].regret) <= regretDiffMax ? (sum + 1) : sum, 0);
+        movesList = listKeys.map(key => {
         const move = strategy[key];
         const regretDiff = Math.min(Math.abs(maxRegret - move.regret), maxDiff);
         const isAgro = +key > 0;
         const isFold = key === '-1';
-        const moveType = this.getMoveType(isAgro, isFold, wasBet);
-        const probab = Math.round(move.strategy * 100);
+        const isMax = Math.max(...listKeys) == key;
+        const moveType = this.getMoveType(isAgro, isFold, wasBet, isMax);
+        // const probab = Math.round(move.strategy * 100);
         const regret = (move.regret/100).toFixed(2) + 'BB';
-        const amount = isAgro ? (Math.round((maxAmount ? maxAmount + +key : +key) / 100) + 'BB') : '';
+        const amount = isAgro ? (Math.round((maxAmount ? (maxAmount + +key) : +key) / 100) + 'BB') : '';
+
         const componentStyle = {
           color: this.getColor(isAgro, isFold),
-          fontSize: (probab > 5 || regretDiff < 3) ? 38 : (25 - regretDiff * 0.182),
+          // fontSize: (probab > 5 || regretDiff < 3) ? 38 : (25 - regretDiff * 0.182),
+          fontSize: (regretDiff < regretDiffMax) ? Math.max(38/(0.7 + maxSizeMoves * 0.3), 25) : (25 - regretDiff * 0.182),   // min 25px top size
         };
-        return <li style={componentStyle}>{moveType + ` ` + amount + ` `}<span className="regret">{regret}</span></li>
+
+        return <tr key={key} style={componentStyle}>
+          <td>{moveType + (isMax ? ' ' : ` ${amount} `)}</td>
+          <td className="regret">{regret}</td>
+        </tr>
       });
     }
 
@@ -128,8 +144,28 @@ class Table extends Component {
               <div className="suit">{heroCards ? enumPoker.cardsSuitsCode[enumPoker.cardsSuits.indexOf(heroCards.hole2Suit)] : ''}</div>
             </div>
           </div>
-          {isPromptRelevant && <div className="prompt">
-              <ul className="prompt-moves">{ movesList }</ul>
+          {isPromptRelevant &&
+            <div className="prompt">
+              {/*<ul className="prompt-moves">{ isPromptRelevant ? [] : movesList }</ul>*/}
+              <table className="prompt-moves">
+                <tbody>
+                  { movesList }
+                </tbody>
+              </table>
+            </div>
+          }
+          {isHeroTurn &&
+            <div className='hero-buttons'>
+              <div className='button-fold'></div>
+              <div className='button-call'></div>
+              <div className='button-raise'></div>
+            </div>
+          }
+          {debug_mode &&
+            <div className='debugTable'>
+              <div>{'hand: ' + debug_hand}</div>
+              <div className={`debug-info-str ` + (debug_aggregatorLock ? 'true' : '')}>{'aggregatorLock: ' + debug_aggregatorLock}</div>
+              <div className={`debug-info-str ` + (debug_move ? 'true' : '')}>{'move: ' + debug_move}</div>
             </div>
           }
         </div>
