@@ -52,7 +52,12 @@ class TablesWrapper extends Component {
       server2,
     } = this.state;
 
-    const ioClient = io(server1);
+    const ioClient = io(server1, {
+      timeout: 60000,       // debug mode with huge freeze timeout
+      pingTimeout: 60000,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+    });
 
     // authorization
     ioClient.emit('authorization', token);
@@ -61,7 +66,8 @@ class TablesWrapper extends Component {
       console.log('authorization success: client');
 
       this.setState({
-        isConnected: true
+        isConnected: true,
+        ioClient,
       });
 
       localStorage.setItem('token', token);
@@ -150,6 +156,21 @@ class TablesWrapper extends Component {
     }
   };
 
+  disconnectHandler = () => {
+    const {
+      ioClient,
+    } = this.state;
+
+    this.setState({
+      ioClient: null,
+      isConnected: false,
+    });
+
+    if (ioClient) {
+      ioClient.disconnect();
+    }
+  };
+
   render() {
     const {
       table0,
@@ -200,6 +221,7 @@ class TablesWrapper extends Component {
 
             <div className="status-wrapper">
               <button onClick={this.connectHandler}>connect</button>
+              <button onClick={this.disconnectHandler}>disconnect</button>
               <div>{this.state.isConnected ? 'online' : 'offline'}</div>
               <div className={this.state.isConnected ? 'on' : 'off'}></div>
             </div>

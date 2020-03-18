@@ -76,12 +76,12 @@ class Table extends Component {
         const moveType = this.getMoveType(isAgro, isFold, wasBet, isMax);
         // const probab = Math.round(move.strategy * 100);
         const regret = (move.regret/100).toFixed(2) + 'BB';
-        const amount = isAgro ? (Math.round((maxAmount ? (maxAmount + +key) : +key) / 100) + 'BB') : '';
+        const amount = isAgro ? (((maxAmount ? (maxAmount + +key) : +key) / 100) + 'BB') : '';
 
         const componentStyle = {
           color: this.getColor(isAgro, isFold),
           // fontSize: (probab > 5 || regretDiff < 3) ? 38 : (25 - regretDiff * 0.182),
-          fontSize: (regretDiff < regretDiffMax) ? Math.max(38/(0.7 + maxSizeMoves * 0.3), 25) : (25 - regretDiff * 0.182),   // min 25px top size
+          fontSize: (regretDiff < regretDiffMax) ? Math.max(38/(0.7 + maxSizeMoves * 0.3), 25) : (25/(0.8 + maxSizeMoves * 0.2) - regretDiff * 0.182),   // min 25px top size
         };
 
         return <tr key={key} style={componentStyle}>
