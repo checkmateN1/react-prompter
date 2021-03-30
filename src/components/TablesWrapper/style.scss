@@ -47,6 +47,26 @@
   }
 }
 
+.control-wrapper {
+  text-align: left;
+
+  div:last-child {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    margin: 0 5px;
+    margin-top: 5px;
+  }
+
+  .on {
+    background-color: green;
+  }
+
+  .off {
+    background-color: red;
+  }
+}
+
 .main-container.spins.party-poker {
   position: absolute;
   background-color: lightgrey;
@@ -85,7 +105,7 @@
 
 .main-container.spins.party-poker .prompt {
   border: none;
-  left: 75px;
+  left: 120px;
   top: 200px;
   font-size: 28px;
   width: 500px;
@@ -95,7 +115,13 @@
   list-style: none;
   position: relative;
   top: -90px;
-  width: 550px;
+  width: 420px;
+}
+
+.prompt-moves th {
+  font-size: 20px;
+  display: contents;
+  border: 1px solid red;
 }
 
 .prompt .prompt-moves td {
@@ -107,7 +133,7 @@
 }
 
 .prompt-moves li .regret {
-  color: #2912cc;
+  color: black;
 }
 
 .prompt-moves tr td:first-child {
@@ -118,7 +144,19 @@
 .prompt-moves tr td:last-child {
   text-align: left;
   padding-left: 5px;
-  color: #2912cc;
+  padding-right: 30px;
+}
+
+.prompt-moves .move-ev {
+  color: white;
+  text-align: end;
+  width: 100px !important;
+  padding-right: 20px;
+}
+
+.prompt-moves .move-probab {
+  padding-left: 30px;
+  color: #2638bb;
 }
 
 .main-container.spins.party-poker .prompt .sizings table {

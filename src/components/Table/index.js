@@ -1,5 +1,6 @@
 // Core
-import React, { Component } from 'react';
+import React from 'react';
+import { Component } from 'react';
 
 // Instruments
 import { enumPoker } from '../../enum';
@@ -9,6 +10,10 @@ const regretDiffMax = 3;
 
 class Table extends Component {
 
+  // shouldComponentUpdate(nextProps, nextState) {
+  //
+  // }
+
   getColor = (isAgro, isFold) => {
     if (isAgro) {
       return `rgb(${255}, 0, 0)`;
@@ -16,6 +21,19 @@ class Table extends Component {
       return `rgb(${0}, ${0}, ${0})`;
     }
     return `rgb(${255}, ${255}, 0)`;
+  };
+
+  getBgColor = (isAgro, isFold, checked) => {
+    if (checked) {
+      if (isAgro) {
+        return `rgba(245, 120, 120, 0.65)`;
+      } else if (isFold) {
+        return `rgba(140, 140, 140, 0.65)`;
+      }
+      return `rgba(170, 170, 0, 0.65)`;
+    } else {
+      return 'transparent';
+    }
   };
 
   getMoveType = (isAgro, isFold, wasBet, isMaxAgro) => {
@@ -60,33 +78,38 @@ class Table extends Component {
     const isPromptRelevant = move_id === hand_move_id && handNumber === hand_handNumber;
 
     const maxRegret = Object.keys(strategy).reduce((max, move) => {
-      return strategy[move].regret > max ? strategy[move].regret : max;
+      return +strategy[move].ev > max ? strategy[move].ev : max;
     }, 0);
 
     let movesList = [];
     if (isPromptRelevant) {
       const listKeys = Object.keys(strategy).sort((a, b) => +b - +a);
-      const maxSizeMoves = listKeys.reduce((sum, key) => Math.abs(maxRegret - strategy[key].regret) <= regretDiffMax ? (sum + 1) : sum, 0);
+      const maxSizeMoves = listKeys.reduce((sum, key) => Math.abs(maxRegret - strategy[key].ev) <= regretDiffMax ? (sum + 1) : sum, 0);
         movesList = listKeys.map(key => {
         const move = strategy[key];
-        const regretDiff = Math.min(Math.abs(maxRegret - move.regret), maxDiff);
+        const regretDiff = Math.min(Math.abs(maxRegret - move.ev), maxDiff);
         const isAgro = +key > 0;
         const isFold = key === '-1';
         const isMax = Math.max(...listKeys) == key;
         const moveType = this.getMoveType(isAgro, isFold, wasBet, isMax);
         // const probab = Math.round(move.strategy * 100);
-        const regret = (move.regret/100).toFixed(2) + 'BB';
-        const amount = isAgro ? (((maxAmount ? (maxAmount + +key) : +key) / 100) + 'BB') : '';
+        const ev = `${(+move.ev/100).toFixed(2)}`;    // + 'BB'
+        const probab = `${(+move.strategy * 100).toFixed(1)}%`;
+        // console.log('move', move);
+        const amount = isAgro ? (((maxAmount ? (maxAmount + +key) : +key) / 100)) : '';    // + 'BB'
 
         const componentStyle = {
           color: this.getColor(isAgro, isFold),
           // fontSize: (probab > 5 || regretDiff < 3) ? 38 : (25 - regretDiff * 0.182),
-          fontSize: (regretDiff < regretDiffMax) ? Math.max(38/(0.7 + maxSizeMoves * 0.3), 25) : (25/(0.8 + maxSizeMoves * 0.2) - regretDiff * 0.182),   // min 25px top size
+          // fontSize: (regretDiff < regretDiffMax) ? Math.max(28/(0.7 + maxSizeMoves * 0.3), 25) : (25/(0.8 + maxSizeMoves * 0.2) - regretDiff * 0.182),   // min 25px top size
+          fontSize: 27,
+          backgroundColor: this.getBgColor(isAgro, isFold, move.checked),
         };
 
         return <tr key={key} style={componentStyle}>
           <td>{moveType + (isMax ? ' ' : ` ${amount} `)}</td>
-          <td className="regret">{regret}</td>
+          <td className="move-ev">{ev}</td>
+          <td className="move-ev"><span className='move-probab'>{probab}</span></td>
         </tr>
       });
     }
@@ -149,6 +172,13 @@ class Table extends Component {
               {/*<ul className="prompt-moves">{ isPromptRelevant ? [] : movesList }</ul>*/}
               <table className="prompt-moves">
                 <tbody>
+                  {/*{isPromptRelevant &&*/}
+                    {/*<tr>*/}
+                      {/*<th>move</th>*/}
+                      {/*<th>strategy</th>*/}
+                      {/*<th>ev</th>*/}
+                    {/*</tr>*/}
+                  {/*}*/}
                   { movesList }
                 </tbody>
               </table>

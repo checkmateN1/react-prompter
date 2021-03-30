@@ -14,6 +14,9 @@ import './style.scss';
 
 // const token = 'uidfksicnm730pdemg662oermfyf75jdf9djf';  // simulator/debug
 
+const debug_mode = false;
+
+
 class TablesWrapper extends Component {
   state = {
     table0: {},
@@ -28,6 +31,7 @@ class TablesWrapper extends Component {
     server1: '',
     server2: '',
     isConnected: false,
+    isPaused: false,
   };
 
   componentDidMount() {
@@ -55,8 +59,9 @@ class TablesWrapper extends Component {
     const ioClient = io(server1, {
       timeout: 60000,       // debug mode with huge freeze timeout
       pingTimeout: 60000,
-      reconnection: true,
-      reconnectionAttempts: Infinity,
+      // reconnection: true,
+      // reconnectionDelay: 1500,
+      // reconnectionAttempts: Infinity,
     });
 
     // authorization
@@ -67,6 +72,7 @@ class TablesWrapper extends Component {
 
       this.setState({
         isConnected: true,
+        isPaused: false,
         ioClient,
       });
 
@@ -78,6 +84,7 @@ class TablesWrapper extends Component {
     });
 
     ioClient.on("prompt", data => {
+      console.log(data.prompt);
       this.setState({
         ['table' + data.id]: data.prompt,
       });
@@ -156,6 +163,14 @@ class TablesWrapper extends Component {
     }
   };
 
+  pauseHandler = () => {
+    this.setState(prevState => {
+      return {
+        isPaused: prevState.isPaused,
+      }
+    })
+  };
+
   disconnectHandler = () => {
     const {
       ioClient,
@@ -164,6 +179,7 @@ class TablesWrapper extends Component {
     this.setState({
       ioClient: null,
       isConnected: false,
+      isPaused: false,
     });
 
     if (ioClient) {
@@ -185,7 +201,8 @@ class TablesWrapper extends Component {
       server1,
       server2,
       debug_info = {},
-      debug_mode = true,
+      isConnected,
+      isPaused,
     } = this.state;
 
     const {
@@ -222,9 +239,16 @@ class TablesWrapper extends Component {
             <div className="status-wrapper">
               <button onClick={this.connectHandler}>connect</button>
               <button onClick={this.disconnectHandler}>disconnect</button>
-              <div>{this.state.isConnected ? 'online' : 'offline'}</div>
-              <div className={this.state.isConnected ? 'on' : 'off'}></div>
+              <div>{isConnected ? 'online' : 'offline'}</div>
+              <div className={isConnected ? 'on' : 'off'}></div>
             </div>
+
+            {debug_mode &&
+              <div className="control-wrapper">
+                <button onClick={this.pauseHandler}>{isPaused ? 'play' : 'stop'}</button>
+                <div className={isPaused ? 'on' : 'off'}></div>
+              </div>
+            }
           </div>
         </>
     );
