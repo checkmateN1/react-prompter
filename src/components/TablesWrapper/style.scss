@@ -114,7 +114,7 @@
 .main-container.spins.party-poker .prompt .prompt-moves {
   list-style: none;
   position: relative;
-  top: -90px;
+  top: -72px;
   width: 420px;
 }
 
@@ -222,20 +222,21 @@ td.ev {
 .main-container.spins.party-poker .hero-hand {
   display: flex;
   position: absolute;
-  left: 312px;
-  top: 389px;
-  width: 76px;
+  left: 301px;
+  top: 381px;
+  width: 102px;
+  height: 70px;
   justify-content: space-around;
-  font-size: 22px;
+  font-size: 30px;
 }
 .main-container.spins.party-poker .cards {
   border-radius: 4px;
-  width: 35px;
+  width: 46px;
   text-align: center;
   color: white;
 }
 .main-container.spins.party-poker .suit {
-  font-size: 30px;
+  font-size: 40px;
   margin-top: -9px;
 }
 
