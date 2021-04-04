@@ -222,7 +222,7 @@ class TablesWrapper extends Component {
           <Table prompt={table1} handPrompt={hand1} debug_mode={debug_mode} position='right top'/>
           <Table prompt={table2} handPrompt={hand2} debug_mode={debug_mode} position='left bottom'/>
           <Table prompt={table3} handPrompt={hand3} debug_mode={debug_mode} position='right bottom'/>
-
+          <span className='logo-footer'>Mephisto - poker artificial intelligence ©</span>
           {debug_mode &&
             <div className="debug-info">
               <div className={`debug-info-str ` + (aggregatorFree ? '' : 'true')}>{'aggregatorFree:' + aggregatorFree}</div>

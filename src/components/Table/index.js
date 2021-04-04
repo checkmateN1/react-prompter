@@ -36,14 +36,14 @@ class Table extends Component {
     }
   };
 
-  getMoveType = (isAgro, isFold, wasBet, isMaxAgro) => {
+  getMoveType = (isAgro, isFold, wasBet, isMaxAgro, invest) => {
     if (isMaxAgro) { return 'All-in'; }
     if (isAgro) {
       return wasBet ? 'Raise' : 'Bet';
     } else if (isFold) {
       return 'Fold';
     }
-    return wasBet ? 'Call' : 'Check';
+    return !!invest ? 'Call' : 'Check';
   };
 
   render() {
@@ -72,6 +72,7 @@ class Table extends Component {
       hand_move_id,
       hand_handNumber,
       wasBet,
+      prevHeroAmountAtCurStreet,
       maxAmount,
     } = handPrompt;
 
@@ -87,11 +88,11 @@ class Table extends Component {
       const maxSizeMoves = listKeys.reduce((sum, key) => Math.abs(maxRegret - strategy[key].ev) <= regretDiffMax ? (sum + 1) : sum, 0);
         movesList = listKeys.map(key => {
         const move = strategy[key];
-        const regretDiff = Math.min(Math.abs(maxRegret - move.ev), maxDiff);
         const isAgro = +key > 0;
         const isFold = key === '-1';
-        const isMax = Math.max(...listKeys) == key;
-        const moveType = this.getMoveType(isAgro, isFold, wasBet, isMax);
+        const isMax = Math.max(...listKeys) == key && +key > 0;
+        const invest = maxAmount - prevHeroAmountAtCurStreet;
+        const moveType = this.getMoveType(isAgro, isFold, wasBet, isMax, invest);
         // const probab = Math.round(move.strategy * 100);
         const ev = `${(+move.ev/100).toFixed(2)}`;    // + 'BB'
         const probab = `${(+move.strategy * 100).toFixed(1)}%`;
@@ -100,8 +101,6 @@ class Table extends Component {
 
         const componentStyle = {
           color: this.getColor(isAgro, isFold),
-          // fontSize: (probab > 5 || regretDiff < 3) ? 38 : (25 - regretDiff * 0.182),
-          // fontSize: (regretDiff < regretDiffMax) ? Math.max(28/(0.7 + maxSizeMoves * 0.3), 25) : (25/(0.8 + maxSizeMoves * 0.2) - regretDiff * 0.182),   // min 25px top size
           fontSize: 27,
           backgroundColor: this.getBgColor(isAgro, isFold, move.checked),
         };
