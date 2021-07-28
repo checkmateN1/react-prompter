@@ -27,6 +27,10 @@ class TablesWrapper extends Component {
     hand1: {},
     hand2: {},
     hand3: {},
+    handEV0: {},
+    handEV1: {},
+    handEV2: {},
+    handEV3: {},
     token: '',
     server1: '',
     server2: '',
@@ -84,7 +88,6 @@ class TablesWrapper extends Component {
     });
 
     ioClient.on("prompt", data => {
-      console.log(data.prompt);
       this.setState({
         ['table' + data.id]: data.prompt,
       });
@@ -97,33 +100,40 @@ class TablesWrapper extends Component {
       });
     });
 
-    ioClient.on("debugInfo", data => {
+    ioClient.on("hand_prompt_ev", data => {
       console.log(data);
-      const {
-        id,
-        hand,
-        aggregatorLock,
-        move,
-        aggregatorFree,
-        sessionsQueue,
-        tasksSimulationsQueue,
-      } = data;
-      this.setState(prevState => {
-        return {
-          ['table' + id]: {
-            ...prevState['table' + id],
-            debug_hand: hand,
-            debug_aggregatorLock: aggregatorLock,
-            debug_move: move,
-          },
-          debug_info: {
-            aggregatorFree,
-            sessionsQueue,
-            tasksSimulationsQueue,
-          }
-        }
+      this.setState({
+        ['handEV' + data.id]: data.hand_prompt,
       });
     });
+
+    // ioClient.on("debugInfo", data => {
+    //   console.log(data);
+    //   const {
+    //     id,
+    //     hand,
+    //     aggregatorLock,
+    //     move,
+    //     aggregatorFree,
+    //     sessionsQueue,
+    //     tasksSimulationsQueue,
+    //   } = data;
+    //   this.setState(prevState => {
+    //     return {
+    //       ['table' + id]: {
+    //         ...prevState['table' + id],
+    //         debug_hand: hand,
+    //         debug_aggregatorLock: aggregatorLock,
+    //         debug_move: move,
+    //       },
+    //       debug_info: {
+    //         aggregatorFree,
+    //         sessionsQueue,
+    //         tasksSimulationsQueue,
+    //       }
+    //     }
+    //   });
+    // });
 
     ioClient.on('disconnect', () => {
       console.log('server gone');
@@ -197,6 +207,10 @@ class TablesWrapper extends Component {
       hand1,
       hand2,
       hand3,
+      handEV0,
+      handEV1,
+      handEV2,
+      handEV3,
       token,
       server1,
       server2,
@@ -216,12 +230,14 @@ class TablesWrapper extends Component {
     // const table2 = !!Object.keys(this.state["2"]).length;
     // const table3 = !!Object.keys(this.state["3"]).length;
 
+    console.log(table1);
+
     return (
         <>
-          <Table prompt={table0} handPrompt={hand0} debug_mode={debug_mode} position='left top'/>
-          <Table prompt={table1} handPrompt={hand1} debug_mode={debug_mode} position='right top'/>
-          <Table prompt={table2} handPrompt={hand2} debug_mode={debug_mode} position='left bottom'/>
-          <Table prompt={table3} handPrompt={hand3} debug_mode={debug_mode} position='right bottom'/>
+          <Table prompt={table0} handPrompt={hand0} handEV={handEV0} debug_mode={debug_mode} position='left top'/>
+          <Table prompt={table1} handPrompt={hand1} handEV={handEV1} debug_mode={debug_mode} position='right top'/>
+          <Table prompt={table2} handPrompt={hand2} handEV={handEV2} debug_mode={debug_mode} position='left bottom'/>
+          <Table prompt={table3} handPrompt={hand3} handEV={handEV3} debug_mode={debug_mode} position='right bottom'/>
           <span className='logo-footer'>Mephisto - poker artificial intelligence ©</span>
           {debug_mode &&
             <div className="debug-info">

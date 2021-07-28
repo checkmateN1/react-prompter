@@ -23,6 +23,31 @@ class Table extends Component {
     return `rgb(${255}, ${255}, 0)`;
   };
 
+  getEvColor = (ev, maxEv, minEv) => {
+    console.log('ev', ev);
+    console.log('maxEv', maxEv);
+    console.log('minEv', minEv);
+    console.log('(maxEv - minEv)', (maxEv - minEv));
+    if ((maxEv - minEv) === 0) {
+      return `rgb(${255}, 255, 255) !important`;
+    }
+
+    const newMin = maxEv - 0.4;
+    if (ev < newMin) {
+      console.log('ev', ev);
+      console.log('newMin', newMin);
+      return `rgb(${100}, 100, 100)`;
+    }
+
+    const minEvNew = Math.max(newMin, minEv);
+    const OldRange = (maxEv - minEvNew);
+    let NewRange = 1
+    let NewValue = (((ev - minEvNew) * NewRange) / OldRange) + 0;
+
+    console.log('NewValue', NewValue);
+    return `rgb(0, ${170 * Math.max(NewValue, 0.65)}, 0)`;
+  };
+
   getBgColor = (isAgro, isFold, checked) => {
     if (checked) {
       if (isAgro) {
@@ -39,7 +64,7 @@ class Table extends Component {
   getMoveType = (isAgro, isFold, wasBet, isMaxAgro, invest) => {
     if (isMaxAgro) { return 'All-in'; }
     if (isAgro) {
-      return wasBet ? 'Raise' : 'Bet';
+      return wasBet ? 'R' : 'B';
     } else if (isFold) {
       return 'Fold';
     }
@@ -50,6 +75,7 @@ class Table extends Component {
     const {
       prompt = {},
       handPrompt = {},
+      handEV = {},
       position,
       debug_mode,
     } = this.props;
@@ -74,30 +100,60 @@ class Table extends Component {
       wasBet,
       prevHeroAmountAtCurStreet,
       maxAmount,
+      turnOffButtons,
     } = handPrompt;
+
+    const {
+      strategyEV = {},
+      hand_move_id_ev,
+      hand_handNumber_ev,
+    } = handEV;
+
+    // console.log(turnOffButtons);
+    // console.log(heroCards);
 
     const isPromptRelevant = move_id === hand_move_id && handNumber === hand_handNumber;
 
-    const maxRegret = Object.keys(strategy).reduce((max, move) => {
-      return +strategy[move].ev > max ? strategy[move].ev : max;
-    }, 0);
-
     let movesList = [];
     if (isPromptRelevant) {
+      let maxEv = -100500;
+      let minEv = 100500;
+      for (let sizing in strategy) {
+        if (strategy[sizing].ev/100 < minEv) {
+          minEv = strategy[sizing].ev/100;
+        }
+        if (strategy[sizing].ev/100 > maxEv) {
+          maxEv = strategy[sizing].ev/100;
+        }
+      }
+
       const listKeys = Object.keys(strategy).sort((a, b) => +b - +a);
-      const maxSizeMoves = listKeys.reduce((sum, key) => Math.abs(maxRegret - strategy[key].ev) <= regretDiffMax ? (sum + 1) : sum, 0);
         movesList = listKeys.map(key => {
         const move = strategy[key];
+        const moveEV = strategyEV[key];
         const isAgro = +key > 0;
         const isFold = key === '-1';
         const isMax = Math.max(...listKeys) == key && +key > 0;
         const invest = maxAmount - prevHeroAmountAtCurStreet;
         const moveType = this.getMoveType(isAgro, isFold, wasBet, isMax, invest);
-        // const probab = Math.round(move.strategy * 100);
-        const ev = `${(+move.ev/100).toFixed(2)}`;    // + 'BB'
+        let ev = `${(((moveEV !== undefined && move_id === hand_move_id_ev && handNumber === hand_handNumber_ev) ? +moveEV.ev : +move.ev)/100).toFixed(2)}`;    // + 'BB'
         const probab = `${(+move.strategy * 100).toFixed(1)}%`;
-        // console.log('move', move);
         const amount = isAgro ? (((maxAmount ? (maxAmount + +key) : +key) / 100)) : '';    // + 'BB'
+
+        let potPercent;
+        if (moveType === 'B') {
+          potPercent = '(' + (amount / pot).toFixed(2) + ')';
+        } else if (moveType === 'R') {
+          potPercent = '(' + ((+key / ((pot * 100) + invest))).toFixed(2) + ')';
+        } else {
+          potPercent = '';
+        }
+
+        // if (moveType === 'Check') {
+        //   ev = ev < 0 ? 0 : ev;
+        // } else if (moveType === 'Fold') {
+        //   ev = '0.00';
+        // }
 
         const componentStyle = {
           color: this.getColor(isAgro, isFold),
@@ -105,9 +161,13 @@ class Table extends Component {
           backgroundColor: this.getBgColor(isAgro, isFold, move.checked),
         };
 
+        const evStyle = {
+            color: this.getEvColor(ev, maxEv, minEv)
+        };
+
         return <tr key={key} style={componentStyle}>
-          <td>{moveType + (isMax ? ' ' : ` ${amount} `)}</td>
-          <td className="move-ev">{ev}</td>
+          <td>{moveType + potPercent + ' ' + (isMax ? ' ' : ` ${amount} `)}</td>
+          <td className="move-ev" style={evStyle}>{ev}</td>
           <td className="move-ev"><span className='move-probab'>{probab}</span></td>
         </tr>
       });
@@ -171,19 +231,12 @@ class Table extends Component {
               {/*<ul className="prompt-moves">{ isPromptRelevant ? [] : movesList }</ul>*/}
               <table className="prompt-moves">
                 <tbody>
-                  {/*{isPromptRelevant &&*/}
-                    {/*<tr>*/}
-                      {/*<th>move</th>*/}
-                      {/*<th>strategy</th>*/}
-                      {/*<th>ev</th>*/}
-                    {/*</tr>*/}
-                  {/*}*/}
                   { movesList }
                 </tbody>
               </table>
             </div>
           }
-          {isHeroTurn &&
+          {(isHeroTurn && !turnOffButtons) &&
             <div className='hero-buttons'>
               <div className='button-fold'></div>
               <div className='button-call'></div>
