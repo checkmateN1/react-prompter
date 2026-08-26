@@ -1,0 +1,66 @@
+.audio-recorder-wrapper {
+    position: absolute;
+    bottom: 44px;
+}
+
+.recording-indicator {
+    color: red;
+    font-size: 15px;
+    font-weight: bold;
+    animation: pulse 1s infinite;
+    position: absolute;
+    left: 215px;
+    bottom: 15px;
+}
+
+@keyframes pulse {
+    0% {
+        color: #ff0000;
+    }
+    50% {
+        color: #ff5555;
+    }
+    100% {
+        color: #ff0000;
+    }
+}
+
+.delete-button {
+    position: relative;
+    border: none;
+    background-color: transparent;
+    top: -22px;
+    left: 10px;
+    font-size: 20px;
+}
+
+.delete-button:hover {
+    color: red;
+}
+
+.record-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 180px;
+    height: 27px;
+    font-size: 14px;
+    font-weight: bold;
+    color: #000;
+    background-color: lightgrey;
+    border: 2px solid #000;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    outline: none;
+    text-transform: uppercase;
+}
+
+.record-button i {
+    margin-right: 5px;
+}
+
+.record-button.start:hover,
+.record-button.stop:hover {
+    background-color: #000;
+    color: #fff;
+}

@@ -1,12 +1,11 @@
 // const io = require("socket.io");
 const server = require('http').createServer();
-const io = require('socket.io')(server);
+import { io } from 'socket.io-client';
 // const server = io.listen(3001);
 
 
-const moment = require('moment');
-const fs = require('fs');
-const _ = require('lodash');
+import moment from 'moment';
+import _ from 'lodash';
 
 // event fired every time a new client connects:
 io.on('connection', client => {

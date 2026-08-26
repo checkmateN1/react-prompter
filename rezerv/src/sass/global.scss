@@ -1,0 +1,53 @@
+@import './variables';
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  cursor: default;
+
+  ul {
+    list-style: none;
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  .hidden {
+    display: none !important;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    clip: rect(0 0 0 0);
+  }
+
+  .button {
+    text-decoration: none;
+    border-radius: 3px;
+    background: $primary;
+    transition: 0.3s;
+    border: none;
+
+    &:hover { background: $primary-hover; }
+
+    span {
+      font-weight: 700;
+      font-size: 20px;
+      display: inline-block;
+      margin-bottom: 2px;
+    }
+  }
+}
+
+
