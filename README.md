@@ -1,5 +1,15 @@
 react-prompter
 
+## Release 9.76 — spins HUD
+
+Open the **HUD** tab on the right and enable **spins**. Opponents receive a draggable, two-row HUD with six sample statistics and hover/focus explanations; the bottom-center hero is excluded. Font family, font size, background opacity, width and height are adjustable. Positions are saved per game type and seat and shared across tables, independent of table zoom. Arrow keys move a focused HUD by one pixel (Shift: ten). Other game types are shown but disabled for this release. Values are demonstration data, not real player statistics.
+
+The game type comes from explicit prompt/envelope metadata or native player metadata. Older backend frames without metadata use the original three-seat layout capacity to identify spins; the number of players remaining in a hand is never used.
+
+Select one of ten slots, then **Считать состояние** to save the live table 0. This captures the prompt, cards, board, players, cached nickname images, strategy, EV, buttons, showdown data and baraban data. **Загрузить тестовое** displays the selected snapshot on table 0 without incoming frames or idle cleanup replacing it. **Вернуться к живому столу** restores the latest live state. An empty first slot loads a built-in example with player0–player2. Capturing into an occupied slot replaces it. Settings and snapshots persist in browser localStorage (`prompter.hud.settings.v1` and `prompter.hud.snapshots.v1`); storage failures are reported without overwriting saved slots. Captured nicknames remain unchanged for later preparation of anonymized fixtures. Connections and credentials are not saved.
+
+Build: `$env:BUILD_PATH = 'prompter_v9.76'; npm run build`. Tests: `npm test -- --watchAll=false --runInBand`. Production browser checks: `node scripts/check-hud-release.cjs` with Playwright available through `PLAYWRIGHT_MODULE`; set `HUD_FILE_MODE=1` to test opening the built index.html directly.
+
 ## Release 9.54
 
 Version 9.54 replaces post-render grid measurement with precomputed scales for 4/6/9/12/15 tables. `src/prompterLayout.js` owns geometry shared with CSS via custom properties. Every managed render includes its selected scale in the same React commit as the table grid, including initial mount and server-driven changes; no animation-frame fit is scheduled. Resize recalculates all five scales synchronously before rendering. Invalid/zero viewport dimensions keep the grid hidden until a valid size is available.

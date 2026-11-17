@@ -6,6 +6,7 @@ import { Component } from 'react';
 import { enumPoker } from '../../enum';
 import AudioRecorder from "../audioReport";
 import PlayerTypeNickname from './PlayerTypeNickname';
+import { TableHud } from '../Hud';
 
 const testImg = 'iVBORw0KGgoAAAANSUhEUgAAAGAAAAARCAAAAAAHjfaAAAAECklEQVQ4ET3BW2jWBRzG8e/ze5WoSLSVK7sIE4KGWUlWF5WFub22d62orlPBDCp1ztyadHCz6ZYwxWlIWztZrRMUFXWRUBY0t0zLLIhOZHSgCKuLmPD/PW0IfT6aLZfSRBGWoVRAYOu6d1j8Y6LXb3r4xUQihUfKd3wsR0bKIMyW5sGNgDDCICWlAiIjZQjNtpgm2TkjZUDGmliw9hWY+eWMpT/KyEw5UK6MAQ4jR0Jcdv8z3xM202SUQpaZJkdqji1hWTIYJFvgltbh9aj2xS9vO51UFp54U3hkRWXsen238MovDs64bf5X7xPz5v3067k1/56/sBeCNIFlZJBlQnMiI4HABoEFOPKGN35aYn1Q093NFftr4IemQzFU1zDevXpiCe5fvBjve4LW5o7d9cN/nZvzZEukRIoUsoxQlQATBozIcBSSfN6xWbd+ccnRYtHv53x+3qHOhxr+uGpyuNw41rX6z8ernoxTW+Z0cNXPjza376oMFR993SbIwAiZQshhK1SFUsKIaSmRQhZP3zfSXHvg0D3UjZwoT5797hUbnh+ubTzctap3qw9ePbo+Dy5a+XZrc8eu+uET5UnAmAALCkpWCqEqZJBBWFhghOHSsV9ublrX1sfK7j0d0NzS9+hQXeNY9+rtPTxX2bqXwdvXjW7e1LG7MjhRb0HKEmdkoERIVULmfzIyZ7y3oPbA/GXHWfNU5y5z387XHhiubRzrXr2jx/0NW3s1XF730iObOvasGJqoZ4oRBgTITJFRlQSyDAKHTaSRzLY1rTt+u/Y0a9t3d4oHHxtdN7z8rsNdK7t2Rt8dT+7TUN36F9qaOvbW9080YIcSqSDALtkILM01SEbmDBkVKMzSl8eXtD0XWd93pLHQQHlL/2Bt4/iOVV099FXa9zFY3jDa0rRtb3lwvAGQZaYJgywzRRdihZGZIstMMQ4469Oqfxb9C7O/0v5nG544dd3fg8vvnNi+qquHvkr7Pg2UN4xu3rhtb3ngSD3IMiADMjLIoGpkLAsjlCATKcAtTR/fbdk37K+GU4+8xUDtXYe3r+ra5b5K+zMeqmt6adPGzt4V/RMNkXIYBwkCCyxhzVWQkaU0YYRxFKWiVAjNWnbyEwvlzHuvOfrqZPjGuR/+fvMFJz/xrVXfHGPZrG+P11z+2Xfn3/L3exBFyUphRYGwwBKqlgVYlmVZGIJERpZlAlsGWYCRZSBSsgEZgSESCFsWGFlY1QjLyBC2jDAQVgosE6REyohpShkJWyhlKQGBQUaWpURKJF2EUpZlwjJgYbmUGGQhyzKyslTIIOQoIiPDYBAWYEURCQJkYbB0sYUjgxSWSwWETSSEHRiwKZFECqUcKUdCpERGlhKRBAbZwiALDPEfC2E4nEB1DVYAAAAASUVORK5CYII=';
 
@@ -105,6 +106,7 @@ class Table extends Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
+    if (this.props.isHudPreview) return;
     const { baraban: prevBaraban } = prevState;
     const { baraban: nextBaraban } = this.props;
     const { limitPro: prevLimitPro } = prevState;
@@ -260,9 +262,10 @@ class Table extends Component {
   };
 
   handleReportClick = (event) => {
+    if (this.props.isHudPreview) return;
     if (this.state.showReportButtons) return;
     // Player interactions must never fall through to opening a report.
-    if (event.target.closest('.player, .player-type-picker')) return;
+    if (event.target.closest('.player, .player-type-picker, .player-hud')) return;
     this.setState({
       showReportButtons: true,
     });
@@ -454,7 +457,9 @@ class Table extends Component {
       reportSent,
       limitPro,
       baraban = {}
-    } = this.state;
+    } = this.props.isHudPreview ? { ...this.state, playersState: this.props.prompt.players,
+      handNumberState: this.props.prompt.handNumber, limitPro: this.props.prompt.limitPro || this.state.limitPro,
+      baraban: this.props.baraban, showReportButtons: false, reportSent: false } : this.state;
 
     const barabanLimit = baraban[limitPro] || {};
 
@@ -664,10 +669,14 @@ class Table extends Component {
 
     return (
         <div
-            className={`main-container spins party-poker ${position}${this.props.isPingStale ? ' ping-stale' : ''}`}
+            className={`main-container spins party-poker ${position}${this.props.isPingStale && !this.props.isHudPreview ? ' ping-stale' : ''}`}
             style={tableStyle}
             onDoubleClick={this.handleReportClick}
+            data-table-id={this.props.id}
+            onDoubleClickCapture={this.props.isHudPreview ? event => event.stopPropagation() : undefined}
         >
+          {this.props.isHudPreview && <div className="hud-preview-badge">Тестовый стол 0 · HUD</div>}
+          <TableHud prompt={prompt} playersCount={playersCount} />
           {(handHistory) && <ul className='hero-hand-history'>
             {handHistory}
           </ul>}

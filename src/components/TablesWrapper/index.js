@@ -29,6 +29,8 @@ import './style.scss';
 // !!!! WS clear
 import { connectWithReconnect, MSG } from '../../sharedWS.js';
 import SlowPingLog from './slowPingLog';
+import { HudProvider, HudMenu } from '../Hud';
+import { captureSnapshot, preserveNicknameImages } from '../Hud/model';
 
 // const url = "http://localhost:27990";
 // const url = "http://212.22.223.151:27990"; // mephisto
@@ -175,6 +177,11 @@ const setAndGetPlCount = (id, count) => {
 
 
 class TablesWrapper extends Component {
+  hudTable0 = null;
+  captureHudTable = () => captureSnapshot(this.state,
+    this.hudTable0 && this.hudTable0.state.handNumberState === this.state.table0.handNumber
+      ? this.hudTable0.state.playersState : [], this.hudTable0 ? this.hudTable0.state : {});
+  setHudPreview = (hudPreview) => this.setState({ hudPreview });
   constructor() {
     super();
     this.mergeAdaptPlayers = this.mergeAdaptPlayers.bind(this);
@@ -258,6 +265,7 @@ class TablesWrapper extends Component {
   };
 
   state = {
+    hudPreview: null,
     debugKeepPrompts: readDebugKeepPrompts(),
     isPingStale: false,
     isButtons0: false,
@@ -779,7 +787,11 @@ class TablesWrapper extends Component {
               : oldPrompt;
         } else {
           nextState['playersCount' + data.id] = setAndGetPlCount(data.id, data.playersCount);
-          nextState['table' + data.id] = data.prompt;
+          nextState['table' + data.id] = data.prompt && (data.gameType || data.gameTypesSettings)
+            ? { ...data.prompt, gameType: data.prompt.gameType || data.gameType || data.gameTypesSettings } : data.prompt;
+          if (+data.id === 0) {
+            nextState.table0 = preserveNicknameImages(prevState.table0, nextState.table0);
+          }
         }
 
         if (data.playersCount && data.playersCount !== prevState.playersCount) {
@@ -1289,7 +1301,7 @@ class TablesWrapper extends Component {
       mergePlayerSlaveReset,
       isResetPending,
       baraban
-    } = this.state;
+    } = this.state.hudPreview ? { ...this.state, ...this.state.hudPreview.state, baraban: this.state.baraban } : this.state;
 
     const nickImgWidth = table0.plImgWidth || table1.plImgWidth || table2.plImgWidth || table3.plImgWidth || table4.plImgWidth || table5.plImgWidth || table6.plImgWidth || table7.plImgWidth || table8.plImgWidth || table9.plImgWidth || table10.plImgWidth || table11.plImgWidth || 111;
     const nickImgHeight = table0.plImgHeight || table1.plImgHeight || table2.plImgHeight || table3.plImgHeight || table4.plImgHeight || table5.plImgHeight || table6.plImgHeight || table7.plImgHeight || table8.plImgHeight || table9.plImgHeight || table10.plImgHeight || table11.plImgHeight || 20;
@@ -1354,12 +1366,13 @@ class TablesWrapper extends Component {
     const layoutStyle = this.state.managedByStartPro
       ? managedLayoutStyle(tableCount, environment, this.getLayoutScales(environment)) : TABLE_STYLE;
     return (
+        <HudProvider capture={this.captureHudTable} onPreview={this.setHudPreview} previewActive={!!this.state.hudPreview}>
         <PlayerTypesClientContext.Provider value={this.state.isConnected ? this.state.client : null}>
         {/* <PlayerTypeStylePreview> */}
         <div style={layoutStyle} className={this.state.managedByStartPro ? 'startpro-layout' : 'standalone-layout'}>
           {tableCount === '15' &&
               <>
-                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban} isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} ref={table => { this.hudTable0 = table; }} isHudPreview={!!this.state.hudPreview} playersCount={playersCount0} baraban={this.state.hudPreview ? this.state.hudPreview.state.baraban : baraban} isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
                        handEV={handEV0} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left15 top15'/>
                 <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
@@ -1408,7 +1421,7 @@ class TablesWrapper extends Component {
           }
           {tableCount === '12' &&
               <>
-                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban} isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} ref={table => { this.hudTable0 = table; }} isHudPreview={!!this.state.hudPreview} playersCount={playersCount0} baraban={this.state.hudPreview ? this.state.hudPreview.state.baraban : baraban} isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
                        handEV={handEV0} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left top'/>
                 <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
@@ -1448,7 +1461,7 @@ class TablesWrapper extends Component {
           }
           {tableCount === '9' &&
               <>
-                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban}  isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} ref={table => { this.hudTable0 = table; }} isHudPreview={!!this.state.hudPreview} playersCount={playersCount0} baraban={this.state.hudPreview ? this.state.hudPreview.state.baraban : baraban}  isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
                        handEV={handEV0} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left top'/>
                 <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
@@ -1479,7 +1492,7 @@ class TablesWrapper extends Component {
           }
           {tableCount === '6' &&
               <>
-                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban}  isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} ref={table => { this.hudTable0 = table; }} isHudPreview={!!this.state.hudPreview} playersCount={playersCount0} baraban={this.state.hudPreview ? this.state.hudPreview.state.baraban : baraban}  isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
                        handEV={handEV0} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left top'/>
                 <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
@@ -1501,7 +1514,7 @@ class TablesWrapper extends Component {
           }
           {tableCount === '4' &&
               <>
-                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban}  isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} ref={table => { this.hudTable0 = table; }} isHudPreview={!!this.state.hudPreview} playersCount={playersCount0} baraban={this.state.hudPreview ? this.state.hudPreview.state.baraban : baraban}  isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
                        handEV={handEV0} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left top'/>
                 <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
@@ -1528,6 +1541,7 @@ class TablesWrapper extends Component {
           }
           <button type="button" className="download-ping-logs" onClick={this.downloadPingLogs}
                   title="Скачать журнал пингов дольше 5 секунд">download logs</button>
+          <HudMenu />
           <div id='connection-settings' className={`connection-settings ${isConnectionHide ? 'connection-hided' : 'connection-showed'}${isConnected ? ' on' : ''}`}>
             <button className='connection-hide slider' onClick={this.connectionHideHandler}>options
               <div className="status-wrapper">
@@ -1899,6 +1913,7 @@ class TablesWrapper extends Component {
         </div>
         {/* </PlayerTypeStylePreview> */}
         </PlayerTypesClientContext.Provider>
+        </HudProvider>
     )
         ;
   }
