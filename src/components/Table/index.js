@@ -5,6 +5,7 @@ import { Component } from 'react';
 // Instruments
 import { enumPoker } from '../../enum';
 import AudioRecorder from "../audioReport";
+import PlayerTypeNickname from './PlayerTypeNickname';
 
 const testImg = 'iVBORw0KGgoAAAANSUhEUgAAAGAAAAARCAAAAAAHjfaAAAAECklEQVQ4ET3BW2jWBRzG8e/ze5WoSLSVK7sIE4KGWUlWF5WFub22d62orlPBDCp1ztyadHCz6ZYwxWlIWztZrRMUFXWRUBY0t0zLLIhOZHSgCKuLmPD/PW0IfT6aLZfSRBGWoVRAYOu6d1j8Y6LXb3r4xUQihUfKd3wsR0bKIMyW5sGNgDDCICWlAiIjZQjNtpgm2TkjZUDGmliw9hWY+eWMpT/KyEw5UK6MAQ4jR0Jcdv8z3xM202SUQpaZJkdqji1hWTIYJFvgltbh9aj2xS9vO51UFp54U3hkRWXsen238MovDs64bf5X7xPz5v3067k1/56/sBeCNIFlZJBlQnMiI4HABoEFOPKGN35aYn1Q093NFftr4IemQzFU1zDevXpiCe5fvBjve4LW5o7d9cN/nZvzZEukRIoUsoxQlQATBozIcBSSfN6xWbd+ccnRYtHv53x+3qHOhxr+uGpyuNw41rX6z8ernoxTW+Z0cNXPjza376oMFR993SbIwAiZQshhK1SFUsKIaSmRQhZP3zfSXHvg0D3UjZwoT5797hUbnh+ubTzctap3qw9ePbo+Dy5a+XZrc8eu+uET5UnAmAALCkpWCqEqZJBBWFhghOHSsV9ublrX1sfK7j0d0NzS9+hQXeNY9+rtPTxX2bqXwdvXjW7e1LG7MjhRb0HKEmdkoERIVULmfzIyZ7y3oPbA/GXHWfNU5y5z387XHhiubRzrXr2jx/0NW3s1XF730iObOvasGJqoZ4oRBgTITJFRlQSyDAKHTaSRzLY1rTt+u/Y0a9t3d4oHHxtdN7z8rsNdK7t2Rt8dT+7TUN36F9qaOvbW9080YIcSqSDALtkILM01SEbmDBkVKMzSl8eXtD0XWd93pLHQQHlL/2Bt4/iOVV099FXa9zFY3jDa0rRtb3lwvAGQZaYJgywzRRdihZGZIstMMQ4469Oqfxb9C7O/0v5nG544dd3fg8vvnNi+qquHvkr7Pg2UN4xu3rhtb3ngSD3IMiADMjLIoGpkLAsjlCATKcAtTR/fbdk37K+GU4+8xUDtXYe3r+ra5b5K+zMeqmt6adPGzt4V/RMNkXIYBwkCCyxhzVWQkaU0YYRxFKWiVAjNWnbyEwvlzHuvOfrqZPjGuR/+fvMFJz/xrVXfHGPZrG+P11z+2Xfn3/L3exBFyUphRYGwwBKqlgVYlmVZGIJERpZlAlsGWYCRZSBSsgEZgSESCFsWGFlY1QjLyBC2jDAQVgosE6REyohpShkJWyhlKQGBQUaWpURKJF2EUpZlwjJgYbmUGGQhyzKyslTIIOQoIiPDYBAWYEURCQJkYbB0sYUjgxSWSwWETSSEHRiwKZFECqUcKUdCpERGlhKRBAbZwiALDPEfC2E4nEB1DVYAAAAASUVORK5CYII=';
 
@@ -196,7 +197,8 @@ class Table extends Component {
     return `rgb(0, ${170 * Math.max(NewValue, 0.65)}, 0)`;
   };
 
-  getBgColor = (isAgro, isFold, checked, checkedRotten) => {
+  getBgColor = (isAgro, isFold, checked, checkedRotten, checkedRottenHighMistake) => {
+    // checked — текущий выбранный ход, в том числе новый prefferedSizing после замены на backend.
     if (checked) {
       if (isAgro) {
         return `rgba(245, 120, 120, 0.65)`;
@@ -206,6 +208,11 @@ class Table extends Component {
       return `rgba(170, 170, 0, 0.65)`;
     } else {
       if (checkedRotten) {
+        // checkedRotten — СТАРЫЙ ход до замены: бирюзовый; при высокой ошибке — пурпурный.
+        // Backend ставит checkedRottenHighMistake только при фактической замене с canMoveWithHighMistake === true.
+        if (checkedRottenHighMistake === true) {
+          return `rgba(210, 0, 255, 0.65)`;
+        }
         return `rgba(0, 210, 255, 0.65)`;
       }
       return 'transparent';
@@ -252,10 +259,10 @@ class Table extends Component {
     return false;
   };
 
-  handleReportClick = () => {
-    const { id } = this.props;
-    // console.log("double click, id: ", id);
-
+  handleReportClick = (event) => {
+    if (this.state.showReportButtons) return;
+    // Player interactions must never fall through to opening a report.
+    if (event.target.closest('.player, .player-type-picker')) return;
     this.setState({
       showReportButtons: true,
     });
@@ -319,7 +326,8 @@ class Table extends Component {
       plImgHeight,
       is5max,
       is4max,
-      playersCount
+      playersCount,
+      pickerBackgroundColor
   ) => {
     const player = players[idx];
     if (!player) return null;
@@ -348,10 +356,17 @@ class Table extends Component {
         players[idx]
         && (players[idx].isActive || (isShafRelevant && (players[idx].enumPosition in shkafHands)))
         && (
-          <div key={idx} className={`player player${idx} player${idx}-${playersCount} ${is5max ? 'max5' : ''} ${is4max ? 'max4' : ''}`}>
-          <div
+          <PlayerTypeNickname
+              key={idx}
+              seatClassName={`player player${idx} player${idx}-${playersCount} ${is5max ? 'max5' : ''} ${is4max ? 'max4' : ''}`}
+              reportMode={this.state.showReportButtons}
+              pickerBackgroundColor={pickerBackgroundColor}
               className={`nickname player${idx}`}
-              // onClick={this.selectPlayerForMerging}
+              playerType={player.playerType}
+              isHero={player.isHero}
+              tableId={this.props.id}
+              handNumber={this.props.prompt.handNumber}
+              chair={idx}
               style={{
                 backgroundImage: `url("data:image/png;base64,${hasImg ? state.img : ''}")`,
                 width: `${plImgWidth}px`,
@@ -359,11 +374,7 @@ class Table extends Component {
                 height: 'auto',
                 color: hasImg ? 'transparent' : 'blue',
               }}
-          >
-            <span className="nickname__text">{player.nickname}</span>
-            <span className={`balance player${idx}`}>{player.balance} BB</span>
-          </div>
-
+              seatDetails={<>
           {player.isDealer ? (
               <div className="dealer">
                 <span>D</span>
@@ -427,7 +438,11 @@ class Table extends Component {
                 {player.timeTells}
               </div>
           )}
-        </div> )
+              </>}
+          >
+            <span className="nickname__text">{player.nickname}</span>
+            <span className={`balance player${idx}`}>{player.balance} BB</span>
+          </PlayerTypeNickname> )
     );
   };
 
@@ -615,7 +630,7 @@ class Table extends Component {
         const componentStyle = {
           color: (isLowQualityAfterZeroProbabMove || isSuperLowQualityHeroZeroProbabMove || isSuperLowQualityHeroZeroProbabMovePH) ? ((isSuperLowQualityHeroZeroProbabMove || isSuperLowQualityHeroZeroProbabMovePH) ? 'lightgrey' : 'grey') : this.getColor(isAgro, isFold, move.checkedRotten),
           fontSize: discountEv === undefined ? 27 : 26,
-          backgroundColor: this.getBgColor(isAgro, isFold, move.checked, move.checkedRotten),
+          backgroundColor: this.getBgColor(isAgro, isFold, move.checked, move.checkedRotten, move.checkedRottenHighMistake),
         };
 
         const evStyle = {
@@ -649,7 +664,7 @@ class Table extends Component {
 
     return (
         <div
-            className={`main-container spins party-poker ${position}`}
+            className={`main-container spins party-poker ${position}${this.props.isPingStale ? ' ping-stale' : ''}`}
             style={tableStyle}
             onDoubleClick={this.handleReportClick}
         >
@@ -673,7 +688,8 @@ class Table extends Component {
                       plImgHeight,
                       is5max,
                       is4max,
-                      playersCount
+                      playersCount,
+                      tableStyle.backgroundColor
                   )
                   : null
           )}

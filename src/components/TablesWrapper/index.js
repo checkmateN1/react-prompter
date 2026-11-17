@@ -1,5 +1,7 @@
 // Core
 import React, { Component } from 'react';
+import { serverFromLocation, validServer, updateServerLocation } from '../../startPro';
+import { createScaleCache, fitEnvironment, managedLayoutStyle, TABLE_STYLE } from '../../prompterLayout';
 import packageJson from '../../../package.json';
 // import io from 'socket.io-client';  // old
 import { Buffer } from 'buffer';
@@ -9,6 +11,8 @@ import { Buffer } from 'buffer';
 
 // Components
 import Table from '../Table';
+import { PlayerTypesClientContext, initializePlayerTypesClient, resetPlayerTypesClient } from '../Table/playerTypesClient';
+// import PlayerTypeStylePreview from '../Table/PlayerTypeStylePreview';
 // import Table6 from '../Table6';
 // import Table8 from '../Table8';
 import Report from '../Report';
@@ -24,6 +28,7 @@ import './style.scss';
 
 // !!!! WS clear
 import { connectWithReconnect, MSG } from '../../sharedWS.js';
+import SlowPingLog from './slowPingLog';
 
 // const url = "http://localhost:27990";
 // const url = "http://212.22.223.151:27990"; // mephisto
@@ -34,6 +39,8 @@ import { connectWithReconnect, MSG } from '../../sharedWS.js';
 // console.log('typeof io =', typeof io); // должно быть 'function'
 
 const debug_mode = false;
+const PROMPTER_PING_INTERVAL_MS = 2000;
+const PROMPTER_PING_TIMEOUT_MS = 8000;
 
 let k = 'aW1wb3J0IG9zCmZyb20gbW9kdWxlX3V0aWxzIGltcG9ydCBDb21wb3NpdGVNb2R1bGUKZnJvbSBleHQubW9kdWxlcy5zcGxpdF9zeW1ib2xzIGltcG9ydCBTcGxpdFN5bWJvbHNNb2R1bGUKZnJvbSBleHQubW9kdWxlcy5iaW5hcml6ZSBpbXBvcnQgQmluYXJpemVNb2R1bGUKZnJvbSBleHQubW9kdWxlcy5zdWJhcnJheXNfbGVuIGltcG9ydCBTdWJhcnJheXNMZW5Nb2R1bGUKZnJvbSBleHQubW9kdWxlcy5yYXZlbF9saXN0IGltcG9ydCBSYXZlbExpc3RNb2R1bGUKZnJvbSBleHQubW9kdWxlcy54Z2JfdHJlZSBpbXBvcnQgWEdCVHJlZU1vZHVsZQpmcm9tIGV4dC5tb2R1bGVzLnNwbGljZV9ieV9sZW4gaW1wb3J0IFNwbGljZUJ5TGVuTW9kdWxlCmZyb20gZXh0Lm1vZHVsZXMuY29sb3IgaW1wb3J0IENvbG9yTW9kdWxlCmZyb20gZXh0Lm1vZHVsZXMuc2ltaWxhcml0eSBpbXBvcnQgU2ltaWxhcml0eU1vZHVsZQpmcm9tIGV4dC5tb2R1bGVzLmRoYXNoIGltcG9ydCBESGFzaE1vZHVsZQpmcm9tIGV4dC5tb2R1bGVzLmZyb21fc3RyaW5nX3RvX2ludCBpbXBvcnQgRnJvbVN0cmluZ1RvSW50TW9kdWxlCgpjYXJkID0gQ29tcG9zaXRlTW9kdWxlKEJpbmFyaXplTW9kdWxlKDIwMCksIFhHQlRyZWVNb2R1bGUob3MucGF0aC5qb2luKHInZXh0XG1vZGVsX3dlaWdodHMnLCAnY2FyZF9yYW5rX2NsYXNzaWZpZXIuc2tsJyksIHBhZF90bz0oMzYsMzYpKSwgRnJvbVN0cmluZ1RvSW50TW9kdWxlKCkpCgp0cmFuc2Zvcm1fZGVmaW5pdGlvbnMgPSB7CgkKCSdudW1iZXJzJzogQ29tcG9zaXRlTW9kdWxlKFNwbGl0U3ltYm9sc01vZHVsZShtYXhfc2hhcGU9KDIyLDE4KSksCgkJCQkJCQlTdWJhcnJheXNMZW5Nb2R1bGUoJ3N1Ymxlbmd0aCcpLCAKCQkJCQkJCVJhdmVsTGlzdE1vZHVsZSgpLAoJCQkJCQkJQmluYXJpemVNb2R1bGUoMCksCgkJCQkJCQlYR0JUcmVlTW9kdWxlKG9zLnBhdGguam9pbihyJ2V4dFxtb2RlbF93ZWlnaHRzJywgJ251bWJlcnNfY2xhc3NpZmllcl92Mi5za2wnKSxwYWRfdG89KDIyLDE4KSksIAoJCQkJCQkJU3BsaWNlQnlMZW5Nb2R1bGUoJ3N1Ymxlbmd0aCcpKSwKCgknY29sb3InOiBDb2xvck1vZHVsZSgpLAoKCSdjYXJkJzogY2FyZCwKCSdwbF9jYXJkMSc6IGNhcmQsCgkncGxfY2FyZDInOiBjYXJkLAoKCSdzaW1pbGFyaXR5X2dnX2FsbGluJzogU2ltaWxhcml0eU1vZHVsZShyJ2V4dFxzaW1pbGFyaXR5XGdnXGFsbGluJywgMC4xNiwgRmFsc2UpLAoJJ3NpbWlsYXJpdHknOiBTaW1pbGFyaXR5TW9kdWxlKHInZXh0XHNpbWlsYXJpdHlcZ2dcYWxsaW4nLCAwLjE2LCBGYWxzZSksCgknbmlja25hbWUnOiBESGFzaE1vZHVsZSgpLAoJfQo=';
 let keyBuf = Buffer.from(k, 'ascii');
@@ -112,6 +119,12 @@ const encrypting = (data) => {
 }
 
 const playersCountArr = [];
+const TABLE_COUNTS = ['4', '6', '9', '12', '15'];
+const DEBUG_KEEP_PROMPTS_STORAGE_KEY = 'debugKeepPrompts';
+const readDebugKeepPrompts = () => {
+  try { return localStorage.getItem(DEBUG_KEEP_PROMPTS_STORAGE_KEY) === 'true'; }
+  catch (_) { return false; }
+};
 const HIGHLIGHT_DIFFICULT_SPOTS_ENABLED_STORAGE_KEY = 'highlightDifficultSpotsEnabled';
 const HIGHLIGHT_DIFFICULT_SPOTS_COLOR_STORAGE_KEY = 'highlightDifficultSpotsColor';
 const LEGACY_PROMPT_DELAY_ENABLED_STORAGE_KEY = 'promptDelayEnabled';
@@ -170,7 +183,83 @@ class TablesWrapper extends Component {
 
   highlightDifficultSpotsDemoTimer = null;
 
+  connectionMonitorTimer = null;
+  pingClient = null;
+  pingAuthorized = false;
+  pingSupported = false;
+  pendingPings = new Set();
+  lastPingSentAt = 0;
+  lastPingReplyAt = 0;
+  lastHandPromptAt = 0;
+  promptsClearedForIdle = false;
+  slowPingLog = new SlowPingLog();
+
+  markDisconnected = () => {
+    this.pingAuthorized = false;
+    this.pingSupported = false;
+    this.pendingPings.clear();
+    this.setState({ isConnected: false, isPingStale: false });
+  };
+
+  handleOnline = () => {
+    if (this.pingClient && !this.state.isConnected) this.startListener();
+  };
+
+  downloadPingLogs = () => {
+    this.download('prompter-ping-log.txt', this.slowPingLog.toText());
+  };
+
+  debugKeepPromptsHandler = (event) => {
+    const enabled = this.state.debugKeepPrompts;
+    if (event.detail === 1) this.debugClickCanEnable = !enabled;
+    if (enabled && event.detail <= 1) this.setDebugKeepPrompts(false);
+    else if (!enabled && event.detail === 3 && this.debugClickCanEnable) this.setDebugKeepPrompts(true);
+  };
+
+  setDebugKeepPrompts = (debugKeepPrompts) => {
+    try { localStorage.setItem(DEBUG_KEEP_PROMPTS_STORAGE_KEY, String(debugKeepPrompts)); }
+    catch (_) { /* The toggle still works when browser storage is unavailable. */ }
+    // Keep real timestamps so disabling it restores the normal checks immediately.
+    this.setState({ debugKeepPrompts }, this.checkConnectionHealth);
+  };
+
+  clearAllPrompts = () => {
+    const nextState = {};
+    for (let id = 0; id < 15; id++) {
+      // Same visible reset as sendEmptyPrompt, including auxiliary stale data.
+      nextState['table' + id] = {};
+      nextState['hand' + id] = { turnOffButtons: true, hasDifficultSpotHighlight: false, promptShowDelayMs: 0 };
+      nextState['handEV' + id] = {};
+      nextState['isButtons' + id] = false;
+      nextState['shkaf_table' + id] = {};
+    }
+    this.setState(nextState);
+  };
+
+  checkConnectionHealth = () => {
+    const now = Date.now();
+    // One connection health flag controls the opacity on every table.
+    const isPingStale = !this.state.debugKeepPrompts && this.state.isConnected && this.pingAuthorized && this.pingSupported &&
+      now - this.lastPingReplyAt > PROMPTER_PING_TIMEOUT_MS;
+    if (isPingStale !== this.state.isPingStale) {
+      this.setState({ isPingStale });
+    }
+    if (!this.state.debugKeepPrompts && !this.promptsClearedForIdle && now - this.lastHandPromptAt >= 60000) {
+      this.promptsClearedForIdle = true;
+      this.clearAllPrompts();
+    }
+    // Keep unanswered pings until reply/disconnect, including replies slower than 8s for the log.
+    if (this.state.isConnected && this.pingAuthorized && this.pingClient &&
+        now - this.lastPingSentAt >= PROMPTER_PING_INTERVAL_MS) {
+      this.lastPingSentAt = now;
+      this.pendingPings.add(now);
+      this.pingClient.emit('prompterPing', now);
+    }
+  };
+
   state = {
+    debugKeepPrompts: readDebugKeepPrompts(),
+    isPingStale: false,
     isButtons0: false,
     isButtons1: false,
     isButtons2: false,
@@ -262,6 +351,8 @@ class TablesWrapper extends Component {
     playersCount13: {},
     playersCount14: {},
     token: '',
+    managedByStartPro: new URLSearchParams(window.location.search).get('startpro') === '1',
+    startProCredentialsReady: false,
     server1: '',
     server2: '',
     isConnected: false,
@@ -295,7 +386,27 @@ class TablesWrapper extends Component {
     },
   };
 
+  getLayoutScales = createScaleCache();
+
+  handleViewportChange = () => {
+    if (this.state.managedByStartPro) this.forceUpdate();
+  };
+
   componentWillUnmount() {
+    window.removeEventListener('resize', this.handleViewportChange);
+    if (window.startProConnect === this.applyStartProConnection) {
+      delete window.startProConnect;
+      delete window.startProProtocol;
+      delete window.startProVersion;
+    }
+    window.removeEventListener('offline', this.markDisconnected);
+    window.removeEventListener('online', this.handleOnline);
+    clearInterval(this.connectionMonitorTimer);
+    this.connectionMonitorTimer = null;
+    this.pingAuthorized = false;
+    this.pendingPings.clear();
+    if (this.pingClient) this.pingClient.disconnect();
+    this.pingClient = null;
     if (this.highlightDifficultSpotsDemoTimer) {
       clearTimeout(this.highlightDifficultSpotsDemoTimer);
       this.highlightDifficultSpotsDemoTimer = null;
@@ -303,8 +414,9 @@ class TablesWrapper extends Component {
   }
 
   componentDidMount() {
-    const token = localStorage.getItem('token');
-    const server1 = localStorage.getItem('server1');
+    window.addEventListener('resize', this.handleViewportChange);
+    const token = this.state.managedByStartPro ? '' : localStorage.getItem('token');
+    const server1 = serverFromLocation() || (this.state.managedByStartPro ? '' : localStorage.getItem('server1'));
     const server2 = localStorage.getItem('server2');
     const playersCount = localStorage.getItem('playersCount');
     const tableCount = localStorage.getItem('tableCount');
@@ -332,9 +444,8 @@ class TablesWrapper extends Component {
       //     this.startListener();
       //   }
       // });
-      window.addEventListener('offline', () => {
-        this.setState({ isConnected: false });
-      });
+      window.addEventListener('offline', this.markDisconnected);
+      window.addEventListener('online', this.handleOnline);
 
       favoriteSizings = JSON.parse(favorite);
       if (!favoriteSizings) {
@@ -364,8 +475,27 @@ class TablesWrapper extends Component {
       highlightDifficultSpotsColor: DIFFICULT_SPOT_HIGHLIGHT_COLORS.includes(highlightDifficultSpotsColor)
           ? highlightDifficultSpotsColor
           : DEFAULT_DIFFICULT_SPOT_HIGHLIGHT_COLOR,
+    }, () => {
+      window.startProConnect = this.applyStartProConnection;
+      window.startProProtocol = 1;
+      window.startProVersion = process.env.REACT_APP_PROMPTER_VERSION || packageJson.version;
     });
   }
+
+  applyStartProConnection = (settings) => {
+    if (!settings || !validServer(settings.server) || typeof settings.token !== 'string') return false;
+    const { server, token } = settings;
+    // Replace the URL before connecting so reload uses the same server. Never put the token there.
+    updateServerLocation(server, settings.displaySignature);
+    if (this.pingClient) this.pingClient.disconnect();
+    this.pingClient = null;
+    this.markDisconnected();
+    this.clearAllPrompts();
+    this.setState({ server1: server, token, client: null, managedByStartPro: true, startProCredentialsReady: true }, () => {
+      if (token) this.startListener();
+    });
+    return true;
+  };
 
   checkAndResetBaraban = () => {
     this.setState(prevState => {
@@ -422,18 +552,30 @@ class TablesWrapper extends Component {
 
 
   startListener = () => {
+    if (this.state.managedByStartPro && (!this.state.startProCredentialsReady || !this.state.token)) return;
+    if (this.pingClient) this.pingClient.disconnect();
+    this.markDisconnected();
+    if (!this.connectionMonitorTimer) {
+      this.lastPingReplyAt = Date.now();
+      this.lastHandPromptAt = Date.now();
+      this.connectionMonitorTimer = setInterval(this.checkConnectionHealth, 250);
+    }
     const {
       token,
       server1,
       server2,
     } = this.state;
-    const softVersion = packageJson && packageJson.version ? packageJson.version : 'unknown';
+    const softVersion = process.env.REACT_APP_PROMPTER_VERSION || (packageJson && packageJson.version ? packageJson.version : 'unknown');
 
     const { client } = connectWithReconnect(server1, WebSocket, {
       role: 'client', timeout: 60000, reconnection: true, heartbeatMs: 15000, idleTimeoutMs: 60000, debugId: 'ui'
     });
+    initializePlayerTypesClient(client);
 
     client.on(MSG.OPEN, () => {
+      if (this.pingClient !== client) return;
+      resetPlayerTypesClient(client);
+      this.markDisconnected();
       client.emit('authorization', {
         token,
         isPrompter: true,
@@ -447,18 +589,56 @@ class TablesWrapper extends Component {
 
     client.on('connect_error', (e) => console.log('ERR', e && e.message));
 
+    this.pingClient = client;
+    client.on('tableCount', data => {
+      if (this.pingClient !== client || !this.pingAuthorized) return;
+      if (!data || !['number', 'string'].includes(typeof data.tableCount)) return;
+      const tableCount = String(data.tableCount);
+      if (!TABLE_COUNTS.includes(tableCount)) return;
+      if (this.state.tableCount !== tableCount) this.setState({ tableCount });
+      try { localStorage.setItem('tableCount', tableCount); } catch (_) { /* Still switch when storage is unavailable. */ }
+    });
+    client.on('disconnect', () => {
+      if (this.pingClient !== client) return;
+      this.markDisconnected();
+    });
+    client.on('prompterPong', (sentAt) => {
+      if (this.pingClient !== client || !this.state.isConnected ||
+          !this.pingAuthorized || !this.pendingPings.delete(sentAt)) return;
+      const now = Date.now();
+      const pingMs = now - sentAt;
+      if (!Number.isFinite(pingMs) || pingMs < 0) return;
+      // Old backends never reply. Enable fading only after this connection proves support.
+      this.pingSupported = true;
+      // Use the address captured for this connection, even if the input was edited later.
+      this.slowPingLog.record(server1, pingMs, now);
+      // A delayed reply must not make a still-broken connection look healthy.
+      if (pingMs >= PROMPTER_PING_TIMEOUT_MS) {
+        this.checkConnectionHealth();
+        return;
+      }
+      this.lastPingReplyAt = now;
+      this.setState({ isPingStale: false });
+      client.emit('prompterPingResult', { now: sentAt, pingMs });
+    });
+
     client.on('authorizationSuccess', () => {
+      if (this.pingClient !== client) return;
+      this.pingAuthorized = true;
+      this.pingSupported = false;
+      this.pendingPings.clear();
+      this.lastPingSentAt = 0;
+      this.lastPingReplyAt = Date.now();
       console.log('authorization success: client');
 
       this.setState({
         isConnected: true,
+        isPingStale: false,
         isPaused: false,
         client,
-      });
+      }, this.checkConnectionHealth);
 
-      document.getElementById('connection-settings').classList.add('on');
-
-      localStorage.setItem('token', token);
+      if (!this.state.managedByStartPro) localStorage.setItem('token', token);
       localStorage.setItem('server1', server1);
       localStorage.setItem('server2', server2 || '');
 
@@ -636,6 +816,10 @@ class TablesWrapper extends Component {
         //   console.log('hand_prompt id 5 // data.playersCount: ', data.playersCount);
         // }
         this.setHandPromptWithDifficultSpotHighlight(data);
+        if (data && data.id !== undefined && data.hand_prompt) {
+          this.lastHandPromptAt = Date.now();
+          this.promptsClearedForIdle = false;
+        }
 
         // Prompt highlighting no longer depends on ping timing.
         // if (client && data && data.hand_prompt && data.promptUniqid) {
@@ -723,12 +907,8 @@ class TablesWrapper extends Component {
     //   });
     // });
 
-    // Не закрываем клиент — даём connectWithReconnect самому восстановиться
-    client.on(MSG.CLOSE, () => {
-      console.log('[ui] ws closed – waiting for auto-reconnect');
-      this.setState({ isConnected: false });
-      document.getElementById('connection-settings').classList.remove('on');
-    });
+    // Leave MSG.CLOSE to connectWithReconnect: sharedWS allows one listener per event.
+    // The disconnect listener above updates the UI without replacing automatic reconnect.
   };
 
   supportReport = (data) => {
@@ -800,6 +980,7 @@ class TablesWrapper extends Component {
   };
 
   tokenHandler = (e) => {
+    if (this.state.managedByStartPro) return;
     this.setState({
       token: e.target.value
     })
@@ -880,6 +1061,7 @@ class TablesWrapper extends Component {
   };
 
   srv1Handler = (e) => {
+    if (this.state.managedByStartPro) return;
     this.setState({
       server1: e.target.value
     })
@@ -957,17 +1139,15 @@ class TablesWrapper extends Component {
   };
 
   disconnectHandler = () => {
-    const {
-      client,
-    } = this.state;
+    const client = this.pingClient || this.state.client;
+    this.pingClient = null;
+    this.markDisconnected();
 
     this.setState({
       client: null,
       isConnected: false,
       isPaused: false,
     });
-
-    document.getElementById('connection-settings').classList.remove('on');
 
     if (client) {
       client.disconnect();
@@ -978,7 +1158,8 @@ class TablesWrapper extends Component {
     // console.log(text);
     let pom = document.createElement('a');
     // pom.setAttribute('href', 'data:text/json;charset=utf-8,' + encodeURIComponent(text));
-    pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+    const url = URL.createObjectURL(new Blob(['\uFEFF', text], { type: 'text/plain;charset=utf-8' }));
+    pom.setAttribute('href', url);
     pom.setAttribute('download', filename);
 
     pom.style.display = 'none';
@@ -987,6 +1168,7 @@ class TablesWrapper extends Component {
     pom.click();
 
     document.body.removeChild(pom);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
 
   render() {
@@ -1166,162 +1348,169 @@ class TablesWrapper extends Component {
       tasksSimulationsQueue = '',
     } = debug_info;
 
+    // The new grid and its precomputed scale belong to the same React commit,
+    // including initial mount and server-driven tableCount updates. No post-paint fit.
+    const environment = fitEnvironment();
+    const layoutStyle = this.state.managedByStartPro
+      ? managedLayoutStyle(tableCount, environment, this.getLayoutScales(environment)) : TABLE_STYLE;
     return (
-        <>
+        <PlayerTypesClientContext.Provider value={this.state.isConnected ? this.state.client : null}>
+        {/* <PlayerTypeStylePreview> */}
+        <div style={layoutStyle} className={this.state.managedByStartPro ? 'startpro-layout' : 'standalone-layout'}>
           {tableCount === '15' &&
               <>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban} isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban} isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
                        handEV={handEV0} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left15 top15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
                        handEV={handEV1} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='middle15 top15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={2} playersCount={playersCount2} baraban={baraban}  isButtons={isButtons2} shkaf={shkaf_table2} prompt={table2} handPrompt={hand2}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={2} playersCount={playersCount2} baraban={baraban}  isButtons={isButtons2} shkaf={shkaf_table2} prompt={table2} handPrompt={hand2}
                        handEV={handEV2} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='right15 top15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={3} playersCount={playersCount3} baraban={baraban}  isButtons={isButtons3} shkaf={shkaf_table3} prompt={table3} handPrompt={hand3}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={3} playersCount={playersCount3} baraban={baraban}  isButtons={isButtons3} shkaf={shkaf_table3} prompt={table3} handPrompt={hand3}
                        handEV={handEV3} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='veryright15 top15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={4} playersCount={playersCount4} baraban={baraban}  isButtons={isButtons4} shkaf={shkaf_table4} prompt={table4} handPrompt={hand4}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={4} playersCount={playersCount4} baraban={baraban}  isButtons={isButtons4} shkaf={shkaf_table4} prompt={table4} handPrompt={hand4}
                        handEV={handEV4} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='superright15 top15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={5} playersCount={playersCount5} baraban={baraban}  isButtons={isButtons5} shkaf={shkaf_table5} prompt={table5} handPrompt={hand5}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={5} playersCount={playersCount5} baraban={baraban}  isButtons={isButtons5} shkaf={shkaf_table5} prompt={table5} handPrompt={hand5}
                        handEV={handEV5} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left15 bottom15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={6} playersCount={playersCount6} baraban={baraban}  isButtons={isButtons6} shkaf={shkaf_table6} prompt={table6} handPrompt={hand6}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={6} playersCount={playersCount6} baraban={baraban}  isButtons={isButtons6} shkaf={shkaf_table6} prompt={table6} handPrompt={hand6}
                        handEV={handEV6} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='middle15 bottom15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={7} playersCount={playersCount7} baraban={baraban}  isButtons={isButtons7} shkaf={shkaf_table7} prompt={table7} handPrompt={hand7}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={7} playersCount={playersCount7} baraban={baraban}  isButtons={isButtons7} shkaf={shkaf_table7} prompt={table7} handPrompt={hand7}
                        handEV={handEV7} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='right15 bottom15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={8} playersCount={playersCount8} baraban={baraban}  isButtons={isButtons8} shkaf={shkaf_table8} prompt={table8} handPrompt={hand8}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={8} playersCount={playersCount8} baraban={baraban}  isButtons={isButtons8} shkaf={shkaf_table8} prompt={table8} handPrompt={hand8}
                        handEV={handEV8} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='veryright15 bottom15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={9} playersCount={playersCount9} baraban={baraban}  isButtons={isButtons9} shkaf={shkaf_table9} prompt={table9} handPrompt={hand9}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={9} playersCount={playersCount9} baraban={baraban}  isButtons={isButtons9} shkaf={shkaf_table9} prompt={table9} handPrompt={hand9}
                        handEV={handEV9} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='superright15 bottom15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={10} playersCount={playersCount10} baraban={baraban}  isButtons={isButtons10} shkaf={shkaf_table10} prompt={table10} handPrompt={hand10}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={10} playersCount={playersCount10} baraban={baraban}  isButtons={isButtons10} shkaf={shkaf_table10} prompt={table10} handPrompt={hand10}
                        handEV={handEV10} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left15 verybottom15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={11} playersCount={playersCount11} baraban={baraban}  isButtons={isButtons11} shkaf={shkaf_table11} prompt={table11} handPrompt={hand11}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={11} playersCount={playersCount11} baraban={baraban}  isButtons={isButtons11} shkaf={shkaf_table11} prompt={table11} handPrompt={hand11}
                        handEV={handEV11} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='middle15 verybottom15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={12} playersCount={playersCount12} baraban={baraban}  isButtons={isButtons12} shkaf={shkaf_table12} prompt={table12} handPrompt={hand12}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={12} playersCount={playersCount12} baraban={baraban}  isButtons={isButtons12} shkaf={shkaf_table12} prompt={table12} handPrompt={hand12}
                        handEV={handEV12} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='right15 verybottom15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={13} playersCount={playersCount13} baraban={baraban}  isButtons={isButtons13} shkaf={shkaf_table13} prompt={table13} handPrompt={hand13}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={13} playersCount={playersCount13} baraban={baraban}  isButtons={isButtons13} shkaf={shkaf_table13} prompt={table13} handPrompt={hand13}
                        handEV={handEV13} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='veryright15 verybottom15'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={14} playersCount={playersCount14} baraban={baraban}  isButtons={isButtons14} shkaf={shkaf_table14} prompt={table14} handPrompt={hand14}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={14} playersCount={playersCount14} baraban={baraban}  isButtons={isButtons14} shkaf={shkaf_table14} prompt={table14} handPrompt={hand14}
                        handEV={handEV14} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='superright15 verybottom15'/>
               </>
           }
           {tableCount === '12' &&
               <>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban} isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban} isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
                        handEV={handEV0} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left top'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
                        handEV={handEV1} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='middle top'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={2} playersCount={playersCount2} baraban={baraban}  isButtons={isButtons2} shkaf={shkaf_table2} prompt={table2} handPrompt={hand2}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={2} playersCount={playersCount2} baraban={baraban}  isButtons={isButtons2} shkaf={shkaf_table2} prompt={table2} handPrompt={hand2}
                        handEV={handEV2} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='right top'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={3} playersCount={playersCount3} baraban={baraban}  isButtons={isButtons3} shkaf={shkaf_table3} prompt={table3} handPrompt={hand3}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={3} playersCount={playersCount3} baraban={baraban}  isButtons={isButtons3} shkaf={shkaf_table3} prompt={table3} handPrompt={hand3}
                        handEV={handEV3} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='right bottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={4} playersCount={playersCount4} baraban={baraban}  isButtons={isButtons4} shkaf={shkaf_table4} prompt={table4} handPrompt={hand4}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={4} playersCount={playersCount4} baraban={baraban}  isButtons={isButtons4} shkaf={shkaf_table4} prompt={table4} handPrompt={hand4}
                        handEV={handEV4} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='middle bottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={5} playersCount={playersCount5} baraban={baraban}  isButtons={isButtons5} shkaf={shkaf_table5} prompt={table5} handPrompt={hand5}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={5} playersCount={playersCount5} baraban={baraban}  isButtons={isButtons5} shkaf={shkaf_table5} prompt={table5} handPrompt={hand5}
                        handEV={handEV5} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left bottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={6} playersCount={playersCount6} baraban={baraban}  isButtons={isButtons6} shkaf={shkaf_table6} prompt={table6} handPrompt={hand6}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={6} playersCount={playersCount6} baraban={baraban}  isButtons={isButtons6} shkaf={shkaf_table6} prompt={table6} handPrompt={hand6}
                        handEV={handEV6} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left verybottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={7} playersCount={playersCount7} baraban={baraban}  isButtons={isButtons7} shkaf={shkaf_table7} prompt={table7} handPrompt={hand7}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={7} playersCount={playersCount7} baraban={baraban}  isButtons={isButtons7} shkaf={shkaf_table7} prompt={table7} handPrompt={hand7}
                        handEV={handEV7} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='middle verybottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={8} playersCount={playersCount8} baraban={baraban}  isButtons={isButtons8} shkaf={shkaf_table8} prompt={table8} handPrompt={hand8}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={8} playersCount={playersCount8} baraban={baraban}  isButtons={isButtons8} shkaf={shkaf_table8} prompt={table8} handPrompt={hand8}
                        handEV={handEV8} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='right verybottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={9} playersCount={playersCount9} baraban={baraban}  isButtons={isButtons9} shkaf={shkaf_table9} prompt={table9} handPrompt={hand9}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={9} playersCount={playersCount9} baraban={baraban}  isButtons={isButtons9} shkaf={shkaf_table9} prompt={table9} handPrompt={hand9}
                        handEV={handEV9} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='veryright top'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={10} playersCount={playersCount10} baraban={baraban}  isButtons={isButtons10} shkaf={shkaf_table10} prompt={table10} handPrompt={hand10}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={10} playersCount={playersCount10} baraban={baraban}  isButtons={isButtons10} shkaf={shkaf_table10} prompt={table10} handPrompt={hand10}
                        handEV={handEV10} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='veryright bottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={11} playersCount={playersCount11} baraban={baraban}  isButtons={isButtons11} shkaf={shkaf_table11} prompt={table11} handPrompt={hand11}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={11} playersCount={playersCount11} baraban={baraban}  isButtons={isButtons11} shkaf={shkaf_table11} prompt={table11} handPrompt={hand11}
                        handEV={handEV11} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='veryright verybottom'/>
               </>
           }
           {tableCount === '9' &&
               <>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban}  isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban}  isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
                        handEV={handEV0} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left top'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
                        handEV={handEV1} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='middle top'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={2} playersCount={playersCount2} baraban={baraban}  isButtons={isButtons2} shkaf={shkaf_table2} prompt={table2} handPrompt={hand2}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={2} playersCount={playersCount2} baraban={baraban}  isButtons={isButtons2} shkaf={shkaf_table2} prompt={table2} handPrompt={hand2}
                        handEV={handEV2} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='right top'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={3} playersCount={playersCount3} baraban={baraban}  isButtons={isButtons3} shkaf={shkaf_table3} prompt={table3} handPrompt={hand3}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={3} playersCount={playersCount3} baraban={baraban}  isButtons={isButtons3} shkaf={shkaf_table3} prompt={table3} handPrompt={hand3}
                        handEV={handEV3} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='right bottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={4} playersCount={playersCount4} baraban={baraban}  isButtons={isButtons4} shkaf={shkaf_table4} prompt={table4} handPrompt={hand4}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={4} playersCount={playersCount4} baraban={baraban}  isButtons={isButtons4} shkaf={shkaf_table4} prompt={table4} handPrompt={hand4}
                        handEV={handEV4} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='middle bottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={5} playersCount={playersCount5} baraban={baraban}  isButtons={isButtons5} shkaf={shkaf_table5} prompt={table5} handPrompt={hand5}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={5} playersCount={playersCount5} baraban={baraban}  isButtons={isButtons5} shkaf={shkaf_table5} prompt={table5} handPrompt={hand5}
                        handEV={handEV5} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left bottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={6} playersCount={playersCount6} baraban={baraban}  isButtons={isButtons6} shkaf={shkaf_table6} prompt={table6} handPrompt={hand6}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={6} playersCount={playersCount6} baraban={baraban}  isButtons={isButtons6} shkaf={shkaf_table6} prompt={table6} handPrompt={hand6}
                        handEV={handEV6} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left verybottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={7} playersCount={playersCount7} baraban={baraban}  isButtons={isButtons7} shkaf={shkaf_table7} prompt={table7} handPrompt={hand7}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={7} playersCount={playersCount7} baraban={baraban}  isButtons={isButtons7} shkaf={shkaf_table7} prompt={table7} handPrompt={hand7}
                        handEV={handEV7} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='middle verybottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={8} playersCount={playersCount8} baraban={baraban}  isButtons={isButtons8} shkaf={shkaf_table8} prompt={table8} handPrompt={hand8}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={8} playersCount={playersCount8} baraban={baraban}  isButtons={isButtons8} shkaf={shkaf_table8} prompt={table8} handPrompt={hand8}
                        handEV={handEV8} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='right verybottom'/>
               </>
           }
           {tableCount === '6' &&
               <>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban}  isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban}  isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
                        handEV={handEV0} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left top'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
                        handEV={handEV1} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='middle top'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={2} playersCount={playersCount2} baraban={baraban}  isButtons={isButtons2} shkaf={shkaf_table2} prompt={table2} handPrompt={hand2}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={2} playersCount={playersCount2} baraban={baraban}  isButtons={isButtons2} shkaf={shkaf_table2} prompt={table2} handPrompt={hand2}
                        handEV={handEV2} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='right top'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={3} playersCount={playersCount3} baraban={baraban}  isButtons={isButtons3} shkaf={shkaf_table3} prompt={table3} handPrompt={hand3}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={3} playersCount={playersCount3} baraban={baraban}  isButtons={isButtons3} shkaf={shkaf_table3} prompt={table3} handPrompt={hand3}
                        handEV={handEV3} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='right bottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={4} playersCount={playersCount4} baraban={baraban}  isButtons={isButtons4} shkaf={shkaf_table4} prompt={table4} handPrompt={hand4}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={4} playersCount={playersCount4} baraban={baraban}  isButtons={isButtons4} shkaf={shkaf_table4} prompt={table4} handPrompt={hand4}
                        handEV={handEV4} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='middle bottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={5} playersCount={playersCount5} baraban={baraban}  isButtons={isButtons5} shkaf={shkaf_table5} prompt={table5} handPrompt={hand5}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={5} playersCount={playersCount5} baraban={baraban}  isButtons={isButtons5} shkaf={shkaf_table5} prompt={table5} handPrompt={hand5}
                        handEV={handEV5} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left bottom'/>
               </>
           }
           {tableCount === '4' &&
               <>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban}  isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={0} playersCount={playersCount0} baraban={baraban}  isButtons={isButtons0} shkaf={shkaf_table0} prompt={table0} handPrompt={hand0}
                        handEV={handEV0} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left top'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={1} playersCount={playersCount1} baraban={baraban}  isButtons={isButtons1} shkaf={shkaf_table1} prompt={table1} handPrompt={hand1}
                        handEV={handEV1} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='middle top'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={5} playersCount={playersCount5} baraban={baraban}  isButtons={isButtons5} shkaf={shkaf_table5} prompt={table5} handPrompt={hand5}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={5} playersCount={playersCount5} baraban={baraban}  isButtons={isButtons5} shkaf={shkaf_table5} prompt={table5} handPrompt={hand5}
                        handEV={handEV5} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='left bottom'/>
-                <Table highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={4} playersCount={playersCount4} baraban={baraban}  isButtons={isButtons4} shkaf={shkaf_table4} prompt={table4} handPrompt={hand4}
+                <Table isPingStale={this.state.isPingStale} highlightDifficultSpotsEnabled={highlightDifficultSpotsEnabled} highlightDifficultSpotsDemoActive={isHighlightDifficultSpotsDemoActive} highlightDifficultSpotsColor={highlightDifficultSpotsColor} id={4} playersCount={playersCount4} baraban={baraban}  isButtons={isButtons4} shkaf={shkaf_table4} prompt={table4} handPrompt={hand4}
                        handEV={handEV4} debug_mode={debug_mode} supportReport={this.supportReport}
                        mergeAdaptPlayers={this.mergeAdaptPlayers} position='middle bottom'/>
               </>
@@ -1337,36 +1526,38 @@ class TablesWrapper extends Component {
                     className={`debug-info-str ` + (tasksSimulationsQueue ? 'true' : '')}>{'tasksSimulationsQueue:' + tasksSimulationsQueue}</div>
               </div>
           }
-          <div id='connection-settings' className={"connection-settings connection-showed"}>
+          <button type="button" className="download-ping-logs" onClick={this.downloadPingLogs}
+                  title="Скачать журнал пингов дольше 5 секунд">download logs</button>
+          <div id='connection-settings' className={`connection-settings ${isConnectionHide ? 'connection-hided' : 'connection-showed'}${isConnected ? ' on' : ''}`}>
             <button className='connection-hide slider' onClick={this.connectionHideHandler}>options
               <div className="status-wrapper">
                 <div className={isConnected ? 'on' : 'off'}></div>
               </div></button>
 
-            <input placeholder="token" type="text" defaultValue={token || ''} onChange={this.tokenHandler}/>
-            <input placeholder="main server" type="text" defaultValue={server1 || ''} onChange={this.srv1Handler}/>
+            <input placeholder="token" type={this.state.managedByStartPro ? 'password' : 'text'} value={token || ''}
+                   disabled={this.state.managedByStartPro} onChange={this.tokenHandler}
+                   title={this.state.managedByStartPro ? 'Токен из user_config.json. Изменяется в StartPro.' : ''}/>
+            <input placeholder="main server" type="text" value={server1 || ''}
+                   disabled={this.state.managedByStartPro} onChange={this.srv1Handler}
+                   title={this.state.managedByStartPro ? 'Сервер выбирается в StartPro.' : ''}/>
+            {this.state.managedByStartPro && (!this.state.startProCredentialsReady || !token) &&
+              <div role="status">{this.state.startProCredentialsReady
+                ? 'Токен не задан. Укажите его в StartPro.'
+                : 'Ожидание настроек. Нажмите «Открыть / переподключить подсказчик» в StartPro.'}</div>}
             {/*<input placeholder="reserve server" type="text" defaultValue={server2 || ''} onChange={this.srv2Handler}/>*/}
 
             <div className="status-wrapper">
-              <button onClick={this.connectHandler}>connect</button>
+              <button onClick={this.connectHandler} disabled={this.state.managedByStartPro && (!this.state.startProCredentialsReady || !token)}>connect</button>
               <button onClick={this.disconnectHandler}>disconnect</button>
             </div>
 
             <div className="tablesCountRadio">
-              <input type="radio" id="t4" value="4" name="tablesCount" checked={tableCount==='4'} onChange={this.tableCountHandler} />
-              <label htmlFor="t4">4 tables</label>
-
-              <input type="radio" id="t6" value="6" name="tablesCount" checked={tableCount==='6'} onChange={this.tableCountHandler} />
-              <label htmlFor="t6">6 tables</label>
-
-              <input type="radio" id="t9" value="9" name="tablesCount" checked={tableCount==='9'} onChange={this.tableCountHandler} />
-              <label htmlFor="t9">9 tables</label>
-
-              <input type="radio" id="t12" value="12" name="tablesCount" checked={tableCount==='12'} onChange={this.tableCountHandler} />
-              <label htmlFor="t12">12 tables</label>
-
-              <input type="radio" id="t15" value="15" name="tablesCount" checked={tableCount==='15'} onChange={this.tableCountHandler} />
-              <label htmlFor="t15">15 tables</label>
+              {TABLE_COUNTS.map(count => (
+                <React.Fragment key={count}>
+                  <input type="radio" id={`t${count}`} value={count} name="tablesCount" checked={tableCount===count} onChange={this.tableCountHandler} />
+                  <label htmlFor={`t${count}`}>{count} tables</label>
+                </React.Fragment>
+              ))}
             </div>
 
             <div className="difficultSpotHighlightControl">
@@ -1404,6 +1595,12 @@ class TablesWrapper extends Component {
                   </div>
               }
             </div>
+
+            <button type="button" role="checkbox" className="debug-keep-prompts-control"
+                    aria-checked={this.state.debugKeepPrompts} onClick={this.debugKeepPromptsHandler}>
+              <span className="debug-keep-prompts-box" aria-hidden="true" />
+              <span>debug</span>
+            </button>
 
             {debug_mode &&
                 <div className="control-wrapper">
@@ -1699,7 +1896,9 @@ class TablesWrapper extends Component {
           {/*<>*/}
           {/*  <Report handPrompt={hand0} />*/}
           {/*</>*/}
-        </>
+        </div>
+        {/* </PlayerTypeStylePreview> */}
+        </PlayerTypesClientContext.Provider>
     )
         ;
   }

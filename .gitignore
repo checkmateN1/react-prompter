@@ -2,3 +2,13 @@
 node_modules/
 
 .idea/
+
+# Generated release builds and archives
+/prompter_v*/
+/prompter_v*.zip
+/build/
+/coverage/
+
+# Local temporary files and runtime logs
+/tmp/
+*.log

@@ -4,10 +4,38 @@ body {
   overflow: hidden;
 }
 
+.standalone-layout {
+  display: contents;
+}
+
+.startpro-layout {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
 .app-wrapper {
   display: flex;
   justify-content: space-between;
   user-select: none;
+}
+
+.download-ping-logs {
+  background: #25252500;
+  border: 1px solid #00000000;
+  border-radius: 3px;
+  bottom: 20px;
+  color: #8e8e8e;
+  cursor: pointer;
+  font-size: 10px;
+  /* left: 6px; */
+  line-height: 14px;
+  padding: 2px 5px;
+  position: absolute;
+  z-index: 1002;
+  right: 0px;
 }
 
 .connection-settings {
@@ -45,6 +73,44 @@ body {
   background-color: #105e01;
   transition: right 0.5s, background-color 0.7s;
 }
+
+.connection-settings .debug-keep-prompts-control {
+  display: flex;
+  align-items: center;
+  align-self: flex-end;
+  flex-shrink: 0;
+  gap: 3px;
+  margin: 2px 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ccc;
+  opacity: 0.16;
+  font-size: 9px;
+  line-height: 10px;
+  cursor: pointer;
+
+  .debug-keep-prompts-box {
+    box-sizing: border-box;
+    border: 1px solid currentColor;
+    width: 9px;
+    height: 9px;
+    position: relative;
+  }
+
+  &[aria-checked="true"] .debug-keep-prompts-box::after {
+    content: '';
+    position: absolute;
+    left: 2px;
+    top: 0;
+    width: 2px;
+    height: 4px;
+    border: solid currentColor;
+    border-width: 0 1px 1px 0;
+    transform: rotate(45deg);
+  }
+}
+
 .connection-settings:not(.on) {
   background-color: #530101;
   transition: right 0.5s, background-color 0.7s;
@@ -233,59 +299,64 @@ body {
 .main-container.spins.party-poker {
   position: absolute;
   background-color: lightgrey;
-  width: 714px;
-  height: 524px;
+  width: var(--table-width, 714px);
+  height: var(--table-height, 524px);
   font-family: Arial, sans-serif;
   font-size: 22px;
-  zoom: 0.65;
+  zoom: var(--table-zoom, 0.65);
   color: lightgrey;
 }
 
+// Fade the table contents against its normal background, without fading the whole window.
+.main-container.spins.party-poker.ping-stale > * {
+  opacity: 0.3;
+}
+
 .main-container.left15 {
-  left: 10px;
+  left: var(--table-margin, 10px);
 }
 .main-container.middle15 {
-  left: 731px;
+  left: calc(var(--table-margin, 10px) + 1 * var(--table-column-step, 721px));
 }
 .main-container.right15 {
-  left: 1452px;
+  left: calc(var(--table-margin, 10px) + 2 * var(--table-column-step, 721px));
 }
 .main-container.veryright15 {
-  left: 2173px;
+  left: calc(var(--table-margin, 10px) + 3 * var(--table-column-step, 721px));
 }
 .main-container.superright15 {
-  left: 2894px;
+  left: calc(var(--table-margin, 10px) + 4 * var(--table-column-step, 721px));
 }
 .main-container.top15 {
-  top: 10px;
+  top: var(--table-margin, 10px);
 }
 .main-container.bottom15 {
-  top: 539px;
+  top: calc(var(--table-margin, 10px) + 1 * var(--table-row-step, 529px));
 }
 .main-container.verybottom15 {
-  top: 1068px;
+  top: calc(var(--table-margin, 10px) + 2 * var(--table-row-step, 529px));
 }
 
 .main-container.left {
-  left: 10px;
+  left: var(--table-margin, 10px);
 }
 .main-container.middle {
-  left: 731px;
+  left: calc(var(--table-margin, 10px) + 1 * var(--table-column-step, 721px));
 }
 .main-container.right {
-  left: 1452px;
+  left: calc(var(--table-margin, 10px) + 2 * var(--table-column-step, 721px));
 }
 .main-container.veryright {
-  left: 2173px;
+  left: calc(var(--table-margin, 10px) + 3 * var(--table-column-step, 721px));
 }
 .main-container.top {
-  top: 10px;
+  top: var(--table-margin, 10px);
 }
 .main-container.bottom {
-  top: 539px;
+  top: calc(var(--table-margin, 10px) + 1 * var(--table-row-step, 529px));
 }
 .main-container.verybottom {
-  top: 1068px;
+  top: calc(var(--table-margin, 10px) + 2 * var(--table-row-step, 529px));
 }
 
 .upload-wrapper .custom-file-upload {
@@ -1313,6 +1384,7 @@ td.ev {
 }
 
 .reportSuccess {
+  pointer-events: none; // Keep the notification from intercepting player double clicks.
   padding: 20px;
   background-color: #4CAF50; /* Зеленый фон */
   color: white; /* Белый текст */
