@@ -1,5 +1,9 @@
 react-prompter
 
+## Release 9.77 — HUD settings export
+
+The HUD tab uses the same native button style and bottom-to-top text as `sizings`. The duplicate heading is removed; the panel keeps its existing design. **Экспорт настроек** downloads a versioned JSON file with font, font size, background opacity, dimensions and per-game/seat positions in table coordinates, including the visible default positions. The file can be used to update the code defaults later. Settings still save automatically in localStorage, with drag positions saved on release.
+
 ## Release 9.76 — spins HUD
 
 Open the **HUD** tab on the right and enable **spins**. Opponents receive a draggable, two-row HUD with six sample statistics and hover/focus explanations; the bottom-center hero is excluded. Font family, font size, background opacity, width and height are adjustable. Positions are saved per game type and seat and shared across tables, independent of table zoom. Arrow keys move a focused HUD by one pixel (Shift: ten). Other game types are shown but disabled for this release. Values are demonstration data, not real player statistics.

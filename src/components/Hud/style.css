@@ -35,11 +35,10 @@
   z-index: 2147483600; transform: translateX(100%); transition: transform 250ms ease;
   font: 13px/1.4 Arial, sans-serif; color: #e1e6ee; text-align: left; }
 .hud-menu--open { transform: translateX(0); }
-.hud-menu button, .hud-menu select, .hud-menu input { font: inherit; }
+.hud-menu button:not(.hud-menu__toggle), .hud-menu select, .hud-menu input { font: inherit; }
 .hud-menu button { cursor: pointer; }
 .hud-menu button:disabled, .hud-menu input:disabled { cursor: default; opacity: .4; }
-.hud-menu__toggle { position: absolute; top: 0; left: -47px; width: 47px; height: 35px;
-  border: 1px solid #434a55; border-right: 0; border-radius: 7px 0 0 7px; background: #20262f; color: #e1e6ee; }
+.hud-menu .hud-menu__toggle { left: 0; transform-origin: top left; transform: rotate(-90deg) translateY(-100%); }
 .hud-menu__panel { background: #20262f; border: 1px solid #434a55; border-right: 0; border-radius: 0 0 0 10px;
   padding: 18px; box-shadow: -6px 8px 30px #0003; max-height: calc(100vh - 48px); overflow-y: auto; }
 .hud-menu:not(.hud-menu--open) .hud-menu__panel { visibility: hidden; transition: visibility 0s 250ms; }
@@ -58,6 +57,7 @@
 .hud-menu input[type=range] { display: block; width: 100%; margin: 8px 0 0; height: 12px; }
 .hud-menu__hint { color: #9ca7b5; font-size: 11px; margin: 13px 0 8px; }
 .hud-menu__subtle { border: 0; background: transparent; padding: 0; color: #b6ccdf; font-size: 12px !important; }
+.hud-menu__export { display: block; margin-top: 10px; }
 .hud-menu__snapshots { border-top: 1px solid #39404a; margin-top: 18px; padding-top: 16px; }
 .hud-menu__snapshots .hud-menu__heading { margin-bottom: 6px; }
 .hud-menu__actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 10px; }

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { DEFAULT_SETTINGS, SETTINGS_KEY, SNAPSHOTS_KEY, GAME_TYPES, FONTS, normalizeSettings,
-  readStorage, readSnapshots, hudSize, hudPosition, gameTypeOf, DEMO_SNAPSHOT } from './model';
+  readStorage, readSnapshots, hudSize, hudPosition, gameTypeOf, DEMO_SNAPSHOT, exportHudSettings } from './model';
 import './style.css';
 
 const HudContext = createContext(null);
@@ -45,7 +45,25 @@ export function HudProvider({ children, capture, onPreview, previewActive }) {
     onPreview(JSON.parse(JSON.stringify(snapshot)));
     setStatus(snapshots.spins[slot] ? `Загружен слот ${slot + 1}.` : 'Загружен встроенный пример player0–player2.');
   }
-  return <HudContext.Provider value={{ settings, update, snapshots, save, load, status, previewActive,
+  function exportSettings() {
+    let url;
+    let link;
+    try {
+      const data = exportHudSettings(settings);
+      url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2) + '\n'], { type: 'application/json' }));
+      link = document.createElement('a');
+      link.href = url;
+      link.download = `prompter-hud-settings-${data.exportedAt.slice(0, 10)}.json`;
+      document.body.appendChild(link);
+      link.click();
+      setStatus('Экспорт настроек в JSON готов.');
+    } catch (_) { setStatus('Не удалось экспортировать настройки.'); }
+    finally {
+      if (link) link.remove();
+      if (url) setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+  }
+  return <HudContext.Provider value={{ settings, update, snapshots, save, load, status, previewActive, exportSettings,
     exitPreview: () => { onPreview(null); setStatus('Показан текущий стол 0.'); } }}>{children}</HudContext.Provider>;
 }
 
@@ -56,10 +74,10 @@ export function HudMenu() {
   if (!hud) return null;
   const { settings, update, snapshots, status, previewActive } = hud;
   return createPortal(<aside className={`hud-menu ${open ? 'hud-menu--open' : ''}`} aria-label="Настройки HUD">
-    <button type="button" className="hud-menu__toggle" aria-expanded={open} aria-controls="hud-menu-panel"
-      onClick={() => setOpen(!open)}>HUD <span aria-hidden="true">{open ? '›' : '‹'}</span></button>
+    <button type="button" className="sizings-hide hud-menu__toggle" aria-expanded={open} aria-controls="hud-menu-panel"
+      onClick={() => setOpen(!open)}>HUD</button>
     <div id="hud-menu-panel" className="hud-menu__panel" inert={open ? undefined : ''} aria-hidden={!open}>
-      <div className="hud-menu__heading"><strong>HUD</strong><span>Тестовые данные</span></div>
+      <div className="hud-menu__heading"><span>Тестовые данные</span></div>
       <div className="hud-menu__games">{GAME_TYPES.map(game => <label key={game}>
         <input type="checkbox" checked={game === 'spins' && settings.enabled} disabled={game !== 'spins'}
           onChange={event => update({ enabled: event.target.checked })}/><span>{game}</span>
@@ -78,6 +96,7 @@ export function HudMenu() {
       <div className="hud-menu__hint">Перетаскивайте HUD за любую цифру. Положение общее для столов spins.</div>
       <button className="hud-menu__subtle" type="button" onClick={() => update(previous => ({ ...previous,
         positions: { ...previous.positions, spins: {} } }))}>Сбросить позиции</button>
+      <button className="hud-menu__subtle hud-menu__export" type="button" onClick={hud.exportSettings}>Экспорт настроек</button>
       <div className="hud-menu__snapshots">
         <div className="hud-menu__heading"><strong>Стол 0</strong><span>{previewActive ? 'Просмотр' : '10 состояний'}</span></div>
         <select aria-label="Слот состояния" value={slot} onChange={event => setSlot(+event.target.value)}>

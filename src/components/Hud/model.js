@@ -63,6 +63,15 @@ export function hudPosition(settings, game, seat, point) {
     y: clamp(stored.y, 0, TABLE_GEOMETRY.height - size.height) };
 }
 
+export function exportHudSettings(settings) {
+  const exported = normalizeSettings(settings);
+  // Include the visible defaults too, so the file fully describes the layout.
+  [0, 1].forEach(seat => { exported.positions.spins[seat] = hudPosition(exported, 'spins', seat); });
+  return { format: 'prompter-hud-settings', version: 1, exportedAt: new Date().toISOString(),
+    coordinates: { space: 'table', width: TABLE_GEOMETRY.width, height: TABLE_GEOMETRY.height },
+    settings: exported };
+}
+
 export function validSnapshot(value) {
   return !!value && value.version === 1 && value.game === 'spins' && value.state &&
     value.state.table0 && Array.isArray(value.state.table0.players) &&
